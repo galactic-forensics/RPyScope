@@ -209,8 +209,9 @@ class MainWindowControls(QMainWindow):
 
             # todo action to start recording
 
-            if float(self.rec_time.text()) > 0:
-                self.rec_timer.start()
+            if self.rec_time.text().replace(" ", "") != "":  # make sure not empty
+                if float(self.rec_time.text()) > 0:
+                    self.rec_timer.start()
 
             self.is_recording = True
         else:
@@ -247,7 +248,6 @@ class MainWindowControls(QMainWindow):
         if self.auto_exp_checkbox.isChecked():
             # todo action
             print("auto_exp on")
-            self.rec_timer.start()
         else:
             print("auto_exp off")
 
@@ -268,6 +268,10 @@ class CommandLineScope(QMainWindow):
         self.parent = parent
         self.cam = cam
 
+        # CLI history
+        self.history = []
+        self.history_counter = 0
+
         left = 0
         width = 800
         height = 0
@@ -275,6 +279,8 @@ class CommandLineScope(QMainWindow):
         self.setWindowTitle("PiCamera CLI")
 
         self.cli_edit = QLineEdit()
+        # todo implement command line history
+        # self.cli_edit.keyPressEvent().connect(lambda x: self.key_press_event(x))
         self.cli_edit.returnPressed.connect(self.cli_return_pressed)
         self.cli_edit.setToolTip(
             "Command Line Interface for camera settings.\n"
@@ -291,16 +297,30 @@ class CommandLineScope(QMainWindow):
         if cam is None:
             print("No camera defined!")
 
+    def browse_history(self):
+        """Browse the history."""
+        # todo
+        pass
+
     def cli_return_pressed(self):
         """Return pressed in CLI."""
         # get command and clear
         cmd = self.cli_edit.text()
         self.cli_edit.clear()
 
+        # camera directly is called `cam` -> add a `self`
+        if cmd[:4] == "cam.":
+            cmd = f"rpyscope_app.{cmd}"
+
         try:
-            eval(f"self.parent.{cmd}")
+            eval(f"{cmd}")
         except Exception as e:
             QMessageBox.critical(self, "Error", str(e), QMessageBox.Ok)
+
+    def key_press_event(self, val):
+        """Handle key press events -> go to history for arrow up and down."""
+        print(val)
+        # todo for command line history
 
 
 #  HELPER FUNCTIONS #
@@ -347,7 +367,7 @@ def layout_horizontal(items):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = MainWindowControls()
-    window.show()
+    rpyscope_app = MainWindowControls()
+    rpyscope_app.show()
 
     sys.exit(app.exec_())
