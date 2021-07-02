@@ -198,7 +198,7 @@ class MainWindowControls(QMainWindow):
         fmt = self.scope.image_format
         fname = os.path.join(
             self.scope.home_folder,
-            f"{str(datetime.now())}{self.fname_input.text()}.{fmt}",
+            f"{str(datetime.now())} {self.fname_input.text()}.{fmt}".replace(" ", "_"),
         )
         self.cam.capture(
             fname, format=fmt
@@ -231,7 +231,9 @@ class MainWindowControls(QMainWindow):
             fmt = self.scope.video_format
             fname = os.path.join(
                 self.scope.home_folder,
-                f"{str(datetime.now())}{self.fname_input.text()}.{fmt}",
+                f"{str(datetime.now())} {self.fname_input.text()}.{fmt}".replace(
+                    " ", ""
+                ),
             )
             self.cam.start_recording(fname, format=fmt)
 
@@ -317,17 +319,18 @@ class CommandLineScope(QMainWindow):
         # get command and clear
         cmd = self.cli_edit.text()
 
-        # no command givven
+        # no command given
         if cmd == "":
             return
 
         # camera directly is called `cam` -> add a `self`
+        oldcmd = str(cmd)
         cmd = cmd.replace("cam.", "rpyscope_app.cam.")
 
         try:
             exec(f"{cmd}")
             # append to _history and clear field
-            self.cli_edit.add_to_history(cmd)
+            self.cli_edit.add_to_history(oldcmd)  # attach the old, unmodified command
             self.cli_edit.clear()
         except Exception as e:
             QMessageBox.critical(self, "Error", str(e), QMessageBox.Ok)
