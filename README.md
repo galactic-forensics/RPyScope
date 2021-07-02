@@ -25,13 +25,14 @@ sudo apt update
 sudo apt upgrade
 ```
 
-Next install the required packages as following:
+Next install the required packages
+to run PyQt5 as following:
 
 ```bash
 sudo apt install python3-pyqt5
 ```
 
-(See here: https://gist.github.com/malachib/0477b4280bfad85130d42f8f60ef38cd)
+You should be all set for installations!
 
 ### Clone Repository
 

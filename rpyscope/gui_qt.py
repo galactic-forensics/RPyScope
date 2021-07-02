@@ -1,6 +1,7 @@
 """GUI for RPyMicroscope."""
 
-import time
+from datetime import datetime
+import os
 import sys
 
 from PyQt5.QtWidgets import (
@@ -21,6 +22,9 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QFont, QDoubleValidator
 
+from add_widgets import LineEditHistory
+from microscope import Microscope
+
 
 class MainWindowControls(QMainWindow):
     """Main Window with adjustments, etc. for Microscope GUI"""
@@ -38,6 +42,10 @@ class MainWindowControls(QMainWindow):
         height = 500
         self.setGeometry(left, top, width, height)
         self.setWindowTitle("RPyScope")
+
+        # Load Microscope interactions
+        self.scope = Microscope()
+        self.cam = self.scope.cam
 
         # colors
         self.col_green = "#DBFFD4"
@@ -79,7 +87,7 @@ class MainWindowControls(QMainWindow):
         lbl = QLabel("Auto exposure:")
         self.auto_exp_checkbox = QCheckBox()
         self.auto_exp_checkbox.setChecked(True)
-        self.auto_exp_checkbox.toggled.connect(self.set_auto_exposure)
+        self.auto_exp_checkbox.toggled.connect(self.auto_exposure)
         self.auto_exp_checkbox.setToolTip(
             "Enable or disable automatic exposure.\n"
             "See Section 3.5 in PiCamera documentation."
@@ -90,7 +98,7 @@ class MainWindowControls(QMainWindow):
 
         # file management
         self.path_button = QPushButton("Set Recording Path")
-        self.path_button.clicked.connect(self.select_path)
+        self.path_button.clicked.connect(self.set_path)
         self.path_button.acceptDrops()
         self.path_button.setToolTip(
             "Select the path where images and videos\n" "will be stored."
@@ -153,8 +161,10 @@ class MainWindowControls(QMainWindow):
         layout.addWidget(self.capture_button)
 
         # open command line interface
-        cli = CommandLineScope(parent=self, top=top + height + 50)
+        cli = CommandLineScope(parent=self, top=top + height + 50, cam=self.cam)
         cli.show()
+
+    # SETUP #
 
     def setup_sliders(self):
         """Setup for the sliders and all connects, etc."""
@@ -172,32 +182,43 @@ class MainWindowControls(QMainWindow):
 
     # FUNCTIONS #
 
+    def auto_exposure(self):
+        """Turns automatic exposure of the camera on and off."""
+        if self.auto_exp_checkbox.isChecked():
+            self.scope.auto_exposure = True
+        else:
+            self.scope.auto_exposure = False
+
     def brightness_changed(self, val):
         """Change brightness to value"""
-        # todo
-        print(val)
+        self.cam.brightness = val
 
     def capture_image(self):
         """Capture an image."""
-        pass
-        # todo capture an image
+        fmt = self.scope.image_format
+        fname = os.path.join(
+            self.scope.home_folder,
+            f"{str(datetime.now())}{self.fname_input.text()}.{fmt}",
+        )
+        self.cam.capture(
+            fname, format=fmt
+        )  # specifying the format double checks that it is possible
 
     def contrast_changed(self, val):
         """Change brightness to value"""
-        # todo
-        print(val)
+        self.cam.contrast = val
 
     def preview_cam(self):
         """Preview camera."""
         if not self.is_preview:  # not preview
             self.preview_button.setText("Stop Preview")
             self.preview_button.setStyleSheet(f"background-color:{self.col_red}")
-            # todo action
+            self.cam.start_preview()
             self.is_preview = True
         else:
             self.preview_button.setText("Start Preview")
             self.preview_button.setStyleSheet(f"background-color:{self.col_green}")
-            # todo action
+            self.cam.stop_preview()
             self.is_preview = False
 
     def record_video(self):
@@ -207,7 +228,12 @@ class MainWindowControls(QMainWindow):
             self.rec_button.setStyleSheet(f"background-color:{self.col_red}")
             self.capture_button.setDisabled(True)
 
-            # todo action to start recording
+            fmt = self.scope.video_format
+            fname = os.path.join(
+                self.scope.home_folder,
+                f"{str(datetime.now())}{self.fname_input.text()}.{fmt}",
+            )
+            self.cam.start_recording(fname, format=fmt)
 
             if self.rec_time.text().replace(" ", "") != "":  # make sure not empty
                 if float(self.rec_time.text()) > 0:
@@ -219,7 +245,7 @@ class MainWindowControls(QMainWindow):
             self.rec_button.setStyleSheet(f"background-color:{self.col_green}")
             self.capture_button.setEnabled(True)
 
-            # todo action to stop recording
+            self.cam.stop_recording()
 
             self.rec_timer.stop()
             self.rec_time_elapsed = 0.0  # reset elapsed time
@@ -237,19 +263,10 @@ class MainWindowControls(QMainWindow):
         self.bright_slider.setValue(50)
         self.contr_slider.setValue(0)
 
-    def select_path(self):
+    def set_path(self):
         """Set the recording path via QFileDialogue."""
         path = QFileDialog.getExistingDirectory(self, "Select Directory", "~")
-        print(path)
-        # todo set path to class
-
-    def set_auto_exposure(self):
-        """Turns automatic exposure of the camera on and off."""
-        if self.auto_exp_checkbox.isChecked():
-            # todo action
-            print("auto_exp on")
-        else:
-            print("auto_exp off")
+        self.scope.home_folder = path
 
 
 class CommandLineScope(QMainWindow):
@@ -268,7 +285,7 @@ class CommandLineScope(QMainWindow):
         self.parent = parent
         self.cam = cam
 
-        # CLI history
+        # CLI _history
         self.history = []
         self.history_counter = 0
 
@@ -278,9 +295,7 @@ class CommandLineScope(QMainWindow):
         self.setGeometry(left, top, width, height)
         self.setWindowTitle("PiCamera CLI")
 
-        self.cli_edit = QLineEdit()
-        # todo implement command line history
-        # self.cli_edit.keyPressEvent().connect(lambda x: self.key_press_event(x))
+        self.cli_edit = LineEditHistory()
         self.cli_edit.returnPressed.connect(self.cli_return_pressed)
         self.cli_edit.setToolTip(
             "Command Line Interface for camera settings.\n"
@@ -297,30 +312,25 @@ class CommandLineScope(QMainWindow):
         if cam is None:
             print("No camera defined!")
 
-    def browse_history(self):
-        """Browse the history."""
-        # todo
-        pass
-
     def cli_return_pressed(self):
         """Return pressed in CLI."""
         # get command and clear
         cmd = self.cli_edit.text()
-        self.cli_edit.clear()
+
+        # no command givven
+        if cmd == "":
+            return
 
         # camera directly is called `cam` -> add a `self`
-        if cmd[:4] == "cam.":
-            cmd = f"rpyscope_app.{cmd}"
+        cmd = cmd.replace("cam.", "rpyscope_app.cam.")
 
         try:
-            eval(f"{cmd}")
+            exec(f"{cmd}")
+            # append to _history and clear field
+            self.cli_edit.add_to_history(cmd)
+            self.cli_edit.clear()
         except Exception as e:
             QMessageBox.critical(self, "Error", str(e), QMessageBox.Ok)
-
-    def key_press_event(self, val):
-        """Handle key press events -> go to history for arrow up and down."""
-        print(val)
-        # todo for command line history
 
 
 #  HELPER FUNCTIONS #
