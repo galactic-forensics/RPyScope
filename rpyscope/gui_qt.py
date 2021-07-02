@@ -196,9 +196,12 @@ class MainWindowControls(QMainWindow):
     def capture_image(self):
         """Capture an image."""
         fmt = self.scope.image_format
+        fname_inp = self.fname_input.text()
+        if fname_inp != "":
+            fname_inp = f"_{fname_inp}"  # add underscore
         fname = os.path.join(
             self.scope.home_folder,
-            f"{str(datetime.now())} {self.fname_input.text()}.{fmt}".replace(" ", "_"),
+            f"{str(datetime.now())}{fname_inp}.{fmt}".replace(" ", "_"),
         )
         self.cam.capture(
             fname, format=fmt
@@ -229,11 +232,12 @@ class MainWindowControls(QMainWindow):
             self.capture_button.setDisabled(True)
 
             fmt = self.scope.video_format
+            fname_inp = self.fname_input.text()
+            if fname_inp != "":
+                fname_inp = f"_{fname_inp}"  # add underscore
             fname = os.path.join(
                 self.scope.home_folder,
-                f"{str(datetime.now())} {self.fname_input.text()}.{fmt}".replace(
-                    " ", ""
-                ),
+                f"{str(datetime.now())}{fname_inp}.{fmt}".replace(" ", "_"),
             )
             self.cam.start_recording(fname, format=fmt)
 
