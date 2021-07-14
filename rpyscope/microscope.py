@@ -1,9 +1,17 @@
 """Python class that defines microscope operations."""
 
-from datetime import datetime
+from enum import Enum
 import os
 
-from picamera import PiCamera
+from cameras import rpi_cam
+from cameras import simulation
+
+
+class Cam(Enum):
+    """Enum Class for Available / Implemented Cameras."""
+
+    RPi_HQ = rpi_cam.RPiCam()
+    Demo = simulation.SimCam()
 
 
 class Microscope:
@@ -14,9 +22,10 @@ class Microscope:
     and capture video classes inherit from Microscope class.
     """
 
-    def __init__(self):
+    def __init__(self, default_cam=Cam.Demo):
         """Initialize the Microscope class."""
-        self.cam = PiCamera()
+        self.cam = None
+        self.default_cam = default_cam
 
         self.is_preview_on = False
 
@@ -27,8 +36,13 @@ class Microscope:
             "video_format": "h264",
         }
 
+        # todo load settings
+
+        self._load_camera()
+
     # PROPERTIES #
 
+    # todo: put into camera class
     @property
     def auto_exposure(self):
         """Set / get auto exposure.
@@ -53,15 +67,30 @@ class Microscope:
             )
         if newval:
             self.microscope_settings["auto_exposure"] = newval
-            self.cam.exposure_mode = "auto"
-            self.cam.awb_mode = "auto"
+            self.cam.auto_exposure(True)
         else:
             self.microscope_settings["auto_exposure"] = False
-            self.cam.shutter_speed = self.cam.exposure_speed
-            self.cam.exposure_mode = "off"
-            g = self.cam.awb_gains
-            self.cam.awb_mode = "off"
-            self.cam.awb_gains = g
+            self.cam.auto_exposure(False)
+
+    @property
+    def select_camera(self):
+        """Get / Set the camera.
+
+        :return: Camera that was selected.
+        :rtype: Microscope.Cam
+
+        :raises TypeError: Invalid type was selected to set camera with.
+        """
+        return self.default_cam
+
+    @select_camera.setter
+    def select_camera(self, value):
+        if not isinstance(value, type(self.Cam)):
+            raise TypeError(
+                "Camera to select must be an instance of Microscope.Cam " "enum."
+            )
+        self.default_cam = value
+        self._load_camera()
 
     @property
     def home_folder(self):
@@ -139,3 +168,14 @@ class Microscope:
                 f"{type(newval)}."
             )
         self.microscope_settings["video_format"] = newval
+
+    # PRIVATE FUNCTIONS #
+
+    def _load_camera(self):
+        """Load a new camera, to be called when a default is set.
+
+        If a camera is open, close it first.
+        """
+        if self.cam is not None:
+            self.cam.close()
+        self.cam = self.default_cam.value
