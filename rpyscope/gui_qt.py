@@ -272,7 +272,8 @@ class MainWindowControls(QMainWindow):
     def set_path(self):
         """Set the recording path via QFileDialogue."""
         path = QFileDialog.getExistingDirectory(self, "Select Directory", "~")
-        self.scope.home_folder = path
+        if path != "":
+            self.scope.home_folder = path
 
 
 class CommandLineScope(QMainWindow):
