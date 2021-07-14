@@ -1,6 +1,6 @@
 """Class for Simulated Camera."""
 
-from .abstract_camera import AbsCamera
+from rpyscope.cameras.abstract_camera import AbsCamera
 
 
 class SimCam(AbsCamera):

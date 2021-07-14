@@ -2,9 +2,10 @@
 
 from enum import Enum
 import os
+from pathlib import Path
 
-from cameras import rpi_cam
-from cameras import simulation
+from rpyscope.cameras import rpi_cam
+from rpyscope.cameras import simulation
 
 
 class Cam(Enum):
@@ -31,18 +32,21 @@ class Microscope:
 
         self.microscope_settings = {
             "auto_exposure": True,
-            "home_folder": "/home/pi",
+            "home_folder": Path.home(),
             "image_format": "jpeg",
             "video_format": "h264",
         }
 
         # todo load settings
 
+        # todo load startup script
+        self.path_config = None
+        self._setup_config_folder()
+
         self._load_camera()
 
     # PROPERTIES #
 
-    # todo: put into camera class
     @property
     def auto_exposure(self):
         """Set / get auto exposure.
@@ -97,21 +101,21 @@ class Microscope:
         """Get / set the home folder.
 
         :param newval: New home folder, absolute path.
-        :type newval: str
+        :type newval: Path
 
         :return: Name of the set home folder
-        :rtype: str
+        :rtype: Path
 
-        :raises TypeError: The passed value is not a string.
+        :raises TypeError: The passed value is not a pathlib path.
         :raises ValueError: The given path is not valid.
         """
         return self.microscope_settings["home_folder"]
 
     @home_folder.setter
     def home_folder(self, newval):
-        if not isinstance(newval, str):
+        if not isinstance(newval, Path):
             raise TypeError(
-                f"The value for the path must be a string but is a {type(newval)}."
+                f"The value for the path must be a Path but is a {type(newval)}."
             )
         if not os.path.exists(newval):
             raise ValueError(
@@ -179,3 +183,15 @@ class Microscope:
         if self.cam is not None:
             self.cam.close()
         self.cam = self.default_cam.value
+
+    def _setup_config_folder(self):
+        """Sets up a configuration folder and sets the according self.path_config.
+
+        This folder is used for the `init.py` file that will initialize user settings
+        and will be used to store settings later on. It is assumed that we are on
+        a Posix system.
+        """
+        config_folder = Path.joinpath(Path.home(), ".config/RPyConf")
+        if not Path.is_dir(config_folder):
+            Path.mkdir(config_folder)
+        self.path_config = config_folder

@@ -1,6 +1,6 @@
 """Class for the RPi camera."""
 
-from .abstract_camera import AbsCamera
+from rpyscope.cameras.abstract_camera import AbsCamera
 
 try:
     from picamera import PiCamera

@@ -2,6 +2,7 @@
 
 from datetime import datetime
 import os
+from pathlib import Path
 import sys
 
 from PyQt5.QtWidgets import (
@@ -199,7 +200,7 @@ class MainWindowControls(QMainWindow):
         fname_inp = self.fname_input.text()
         if fname_inp != "":
             fname_inp = f"_{fname_inp}"  # add underscore
-        fname = os.path.join(
+        fname = Path.joinpath(
             self.scope.home_folder,
             f"{str(datetime.now())}{fname_inp}.{fmt}".replace(" ", "_"),
         )
@@ -235,7 +236,7 @@ class MainWindowControls(QMainWindow):
             fname_inp = self.fname_input.text()
             if fname_inp != "":
                 fname_inp = f"_{fname_inp}"  # add underscore
-            fname = os.path.join(
+            fname = Path.joinpath(
                 self.scope.home_folder,
                 f"{str(datetime.now())}{fname_inp}.{fmt}".replace(" ", "_"),
             )
@@ -273,7 +274,7 @@ class MainWindowControls(QMainWindow):
         """Set the recording path via QFileDialogue."""
         path = QFileDialog.getExistingDirectory(self, "Select Directory", "~")
         if path != "":
-            self.scope.home_folder = path
+            self.scope.home_folder = Path(path)
 
 
 class CommandLineScope(QMainWindow):
