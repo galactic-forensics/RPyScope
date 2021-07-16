@@ -205,7 +205,7 @@ class MainWindowControls(QMainWindow):
             f"{str(datetime.now())}{fname_inp}.{fmt}".replace(" ", "_"),
         )
         self.cam.capture(
-            fname, format=fmt
+            str(fname), format=fmt
         )  # specifying the format double checks that it is possible
 
     def contrast_changed(self, val):
@@ -240,7 +240,7 @@ class MainWindowControls(QMainWindow):
                 self.scope.home_folder,
                 f"{str(datetime.now())}{fname_inp}.{fmt}".replace(" ", "_"),
             )
-            self.cam.start_recording(fname, format=fmt)
+            self.cam.start_recording(str(fname), format=fmt)
 
             if self.rec_time.text().replace(" ", "") != "":  # make sure not empty
                 if float(self.rec_time.text()) > 0:
