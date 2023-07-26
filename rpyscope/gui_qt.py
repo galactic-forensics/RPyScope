@@ -155,6 +155,7 @@ class MainWindowControls(QMainWindow):
 
         # image recording
         self.capture_button = QPushButton("Capture Image")
+        self.capture_button.setShortcut("Space")
         self.capture_button.clicked.connect(self.capture_image)
         self.capture_button.setToolTip(
             "Capture an image. Can currently only\n" "be done if video is not recorded."
