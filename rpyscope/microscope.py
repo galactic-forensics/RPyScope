@@ -23,7 +23,7 @@ class Microscope:
     and capture video classes inherit from Microscope class.
     """
 
-    def __init__(self, default_cam=Cam.RPi_HQ):
+    def __init__(self, default_cam=Cam.Demo):
         """Initialize the Microscope class."""
         self.cam = None
         self.default_cam = default_cam
