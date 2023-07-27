@@ -58,6 +58,18 @@ for access via `ssh` authentication.
 Now you should have a new folder named `RPyScope`
 wherever you cloned the repository into.
 
+### Installing the rpyscope python package
+
+Inside the folder `RPyScope`, install the python package by typing
+```bash
+pip3 install .
+```
+If you plan on playing with the source code, type
+```bash
+pip3 install -e .
+```
+instead.
+
 ### Running the RPyScope Software
 
 To run the software,
