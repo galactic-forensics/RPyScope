@@ -46,6 +46,10 @@ class MainWindowControls(QMainWindow):
         self.setGeometry(self.left, self.top, self.width, self.height)
         self.setWindowTitle("RPyScope")
 
+        # Quit shortcut
+        self.quit_sc = QShortcut(QKeySequence('Ctrl+Q'), self)
+        self.quit_sc.activated.connect(sys.exit)
+
         # Load settings
         default_settings = {
             "open_preview_startup": True,
@@ -173,6 +177,7 @@ class MainWindowControls(QMainWindow):
         )
         self.fname_input.returnPressed.connect(self.fname_input.clearFocus)
         layout.addWidget(self.fname_input)
+
         # File name shortcut
         self.fname_sc = QShortcut(QKeySequence('F'), self)
         self.fname_sc.activated.connect(self.fname_input.setFocus)
