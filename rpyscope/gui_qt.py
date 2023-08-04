@@ -19,9 +19,10 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QFileDialog,
     QFrame,
+    QShortcut
 )
 from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtGui import QFont, QDoubleValidator
+from PyQt5.QtGui import QFont, QDoubleValidator, QKeySequence
 
 from add_widgets import LineEditHistory
 from pyqtconfig import ConfigManager, ConfigDialog, QSettingsManager
@@ -82,9 +83,10 @@ class MainWindowControls(QMainWindow):
         main_widget.setLayout(layout)
 
         # Settings button
-        self.settings_button = QPushButton("Settings")
+        self.settings_button = QPushButton("Settings [S]")
         self.settings_button.clicked.connect(self.open_settings)
         self.settings_button.setToolTip("Change some settings")
+        self.settings_button.setShortcut("S")
         layout.addWidget(self.settings_button)
 
         # Brightness & Contrast Labels
@@ -116,24 +118,30 @@ class MainWindowControls(QMainWindow):
         layout.addLayout(layout_horizontal([lbl, self.auto_exp_checkbox]))
 
         # command window
-        self.cmd_window_button = QPushButton("Command window")
+        self.cmd_window_button = QPushButton("Command window [C]")
         self.cmd_window_button.clicked.connect(self.open_cmd_window)
         self.cmd_window_button.setToolTip("Open a command window")
+        self.cmd_window_button.setShortcut("C")
         layout.addWidget(self.cmd_window_button)
 
         layout_hline(layout)
 
-        # file management
-        self.path_button = QPushButton("Set Recording Path")
+        # File path
+        self.path_button = QPushButton("Set Recording Path [Ctrl+P]")
         self.path_button.clicked.connect(self.set_path)
         self.path_button.acceptDrops()
         self.path_button.setToolTip(
             "Select the path where images and videos\n" "will be stored."
         )
+        self.path_button.setShortcut("Ctrl+P")
         layout.addWidget(self.path_button)
-        layout.addWidget(QLabel("File name:"))
+
+        # File name label
+        self.fname_label = QLabel("File name [F]:")
+        layout.addWidget(self.fname_label)
         
-        lbl = QLabel("Increment filename:")
+        # File name increment
+        lbl = QLabel("Increment filename [I]:")
         self.increment_checkbox = QCheckBox()
         self.increment_checkbox.setChecked(False)
         self.increment_checkbox.toggled.connect(self.set_increment)
@@ -141,19 +149,25 @@ class MainWindowControls(QMainWindow):
             "If the filename ends with a number\n"
             "increment that number after every picture or recording"
         )
+        self.increment_checkbox.setShortcut("I")
         layout.addLayout(layout_horizontal([lbl, self.increment_checkbox]))
 
+        # File name input
         self.fname_input = QLineEdit()
         self.fname_input.setToolTip(
             "Select a filename. This will be appended\n" "to a time and date stamp."
         )
+        self.fname_input.returnPressed.connect(self.fname_input.clearFocus)
         layout.addWidget(self.fname_input)
+        # File name shortcut
+        self.fname_sc = QShortcut(QKeySequence('F'), self)
+        self.fname_sc.activated.connect(self.fname_input.setFocus)
 
         layout_hline(layout)
 
         # preview
 
-        self.preview_button = QPushButton("Start Preview")
+        self.preview_button = QPushButton("Start Preview [P]")
         self.preview_button.clicked.connect(self.preview_cam)
         self.is_preview = False
         self.preview_button.setStyleSheet(f"background-color:{self.col_green}")
@@ -163,13 +177,14 @@ class MainWindowControls(QMainWindow):
             "directly to your GPU. You might not see this\n"
             "program anymore, which could be an issue."
         )
+        self.preview_button.setShortcut("P")
         layout.addWidget(self.preview_button)
 
         layout_hline(layout)
 
-        # video recording
+        # video recording time
 
-        layout.addWidget(QLabel("Recording Time (s):"))
+        layout.addWidget(QLabel("Recording Time in seconds [T]:"))
         self.rec_time = QLineEdit()
         self.rec_time.setValidator(QDoubleValidator(bottom=0))
         self.rec_time.setAlignment(Qt.AlignRight)
@@ -178,25 +193,31 @@ class MainWindowControls(QMainWindow):
             "Video recording time in seconds. If set\n"
             "to 0, will record until button is pressed again."
         )
+        self.rec_time.returnPressed.connect(self.rec_time.clearFocus)
         layout.addWidget(self.rec_time)
-        self.rec_button = QPushButton("Start Recording")
+        self.rec_time_sc = QShortcut(QKeySequence('T'), self)
+        self.rec_time_sc.activated.connect(lambda : self.rec_time.setFocus())
+
+        self.rec_button = QPushButton("Start Recording [R]")
         self.rec_button.clicked.connect(self.record_video)
         self.rec_button.setStyleSheet(f"background-color:{self.col_green}")
         self.rec_button.setToolTip(
             "Record a video. Click to start and stop\n" "or set a timer (see above)."
         )
+        self.rec_button.setShortcut("R")
         self.is_recording = False
         layout.addWidget(self.rec_button)
 
         layout_hline(layout)
 
         # image recording
-        self.capture_button = QPushButton("Capture Image")
+        self.capture_button = QPushButton("Capture Image [Space]")
         self.capture_button.setShortcut("Space")
         self.capture_button.clicked.connect(self.capture_image)
         self.capture_button.setToolTip(
             "Capture an image. Can currently only\n" "be done if video is not recorded."
         )
+        self.capture_button.setShortcut("Space")
         layout.addWidget(self.capture_button)
 
         # open command line interface
@@ -274,7 +295,7 @@ class MainWindowControls(QMainWindow):
     def preview_cam(self):
         """Preview camera."""
         if not self.is_preview:  # not preview
-            self.preview_button.setText("Stop Preview")
+            self.preview_button.setText("Stop Preview [P]")
             self.preview_button.setStyleSheet(f"background-color:{self.col_red}")
             (w_camera,h_camera) = self.cam.resolution
             aspect_ratio = w_camera / h_camera
@@ -285,15 +306,17 @@ class MainWindowControls(QMainWindow):
             self.cam.start_preview(fullscreen=False, window=(x,y,w,h))
             self.is_preview = True
         else:
-            self.preview_button.setText("Start Preview")
+            self.preview_button.setText("Start Preview [P]")
             self.preview_button.setStyleSheet(f"background-color:{self.col_green}")
             self.cam.stop_preview()
             self.is_preview = False
+        # Anytime text is changed, the shortcut is cleared. So specify it again.
+        self.preview_button.setShortcut("P")
 
     def record_video(self):
         """Start and stop recording."""
         if not self.is_recording:  # not recording
-            self.rec_button.setText("Stop Recording")
+            self.rec_button.setText("Stop Recording [R]")
             self.rec_button.setStyleSheet(f"background-color:{self.col_red}")
             self.capture_button.setDisabled(True)
 
@@ -313,7 +336,7 @@ class MainWindowControls(QMainWindow):
 
             self.is_recording = True
         else:
-            self.rec_button.setText("Start Recording")
+            self.rec_button.setText("Start Recording [R]")
             self.rec_button.setStyleSheet(f"background-color:{self.col_green}")
             self.capture_button.setEnabled(True)
 
@@ -322,6 +345,8 @@ class MainWindowControls(QMainWindow):
             self.rec_timer.stop()
             self.rec_time_elapsed = 0.0  # reset elapsed time
             self.is_recording = False
+        # Anytime text is changed, the shortcut is cleared. So specify it again.
+        self.rec_button.setShortcut("R")
 
     def recording_timer_check(self):
         """Check and stop the recording if elapsed time larger than total time."""
