@@ -47,6 +47,7 @@ class MainWindowControls(QMainWindow):
 
         # Load settings
         default_settings = {
+            "open_preview_startup": True,
             "open_cmd_startup": False,
             "preview_x" : "310",
             "preview_y" : "40",
@@ -201,6 +202,10 @@ class MainWindowControls(QMainWindow):
         # open command line interface
         if self.config.get("open_cmd_startup"):
             self.open_cmd_window()
+        
+        # open preview
+        if self.config.get("open_preview_startup"):
+            self.preview_cam()
 
     # SETUP #
 
