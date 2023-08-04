@@ -94,13 +94,13 @@ class MainWindowControls(QMainWindow):
         font_center_bold(blabel)
         clabel = QLabel("Contrast")
         font_center_bold(clabel)
-        layout.addLayout(layout_horizontal([blabel, clabel]))
+        layout.addLayout(layout_horizontal([blabel, clabel], align=False))
 
         # Sliders
         self.bright_slider = QSlider(Qt.Vertical)
         self.contr_slider = QSlider(Qt.Vertical)
         self.setup_sliders()
-        layout.addLayout(layout_horizontal([self.bright_slider, self.contr_slider]))
+        layout.addLayout(layout_horizontal([self.bright_slider, self.contr_slider], align=False))
         self.reset_bright_contr_button = QPushButton("Reset B/C")
         self.reset_bright_contr_button.clicked.connect(self.reset_bright_contr)
         self.reset_bright_contr_button.setToolTip("Reset brightness and contrast.")
@@ -115,7 +115,7 @@ class MainWindowControls(QMainWindow):
             "Enable or disable automatic exposure.\n"
             "See Section 3.5 in PiCamera documentation."
         )
-        layout.addLayout(layout_horizontal([lbl, self.auto_exp_checkbox]))
+        layout.addLayout(layout_horizontal([lbl, self.auto_exp_checkbox], align=True))
 
         # command window
         self.cmd_window_button = QPushButton("Command window [C]")
@@ -135,10 +135,6 @@ class MainWindowControls(QMainWindow):
         )
         self.path_button.setShortcut("Ctrl+P")
         layout.addWidget(self.path_button)
-
-        # File name label
-        self.fname_label = QLabel("File name [F]:")
-        layout.addWidget(self.fname_label)
         
         # File name increment
         self.increment = False
@@ -151,7 +147,7 @@ class MainWindowControls(QMainWindow):
             "increment that number after every picture or recording"
         )
         self.increment_checkbox.setShortcut("I")
-        layout.addLayout(layout_horizontal([lbl, self.increment_checkbox]))
+        layout.addLayout(layout_horizontal([lbl, self.increment_checkbox], align=True))
 
         # File name date prefix
         self.date_prefix = False
@@ -164,7 +160,11 @@ class MainWindowControls(QMainWindow):
             "yyyy-mm-dd_time.microseconds_yourfilename.jpeg"
         )
         self.date_prefix_checkbox.setShortcut("D")
-        layout.addLayout(layout_horizontal([lbl, self.date_prefix_checkbox]))
+        layout.addLayout(layout_horizontal([lbl, self.date_prefix_checkbox], align=True))
+
+        # File name label
+        self.fname_label = QLabel("File name [F]:")
+        layout.addWidget(self.fname_label)
 
         # File name input
         self.fname_input = QLineEdit()
@@ -491,7 +491,7 @@ def layout_hline(layout):
     layout.addWidget(line)
 
 
-def layout_horizontal(items):
+def layout_horizontal(items, align):
     """Add items to QHBoxLayout and return the layout.
 
     :param items: List of all Widgets
@@ -501,10 +501,16 @@ def layout_horizontal(items):
     :rtype: Qt.QHBoxLayout
     """
     layout = QHBoxLayout()
-    layout.addStretch()
-    for item in items:
-        layout.addWidget(item)
+    if align==True:
+        for i in range(len(items)-1):
+            layout.addWidget(items[i])
+            layout.addStretch()
+        layout.addWidget(items[-1])
+    else:
         layout.addStretch()
+        for item in items:
+            layout.addWidget(item)
+            layout.addStretch()
     return layout
 
 
