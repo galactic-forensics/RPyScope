@@ -141,6 +141,7 @@ class MainWindowControls(QMainWindow):
         layout.addWidget(self.fname_label)
         
         # File name increment
+        self.increment = False
         lbl = QLabel("Increment filename [I]:")
         self.increment_checkbox = QCheckBox()
         self.increment_checkbox.setChecked(False)
@@ -151,6 +152,19 @@ class MainWindowControls(QMainWindow):
         )
         self.increment_checkbox.setShortcut("I")
         layout.addLayout(layout_horizontal([lbl, self.increment_checkbox]))
+
+        # File name date prefix
+        self.date_prefix = False
+        lbl = QLabel("Date prefix [D]:")
+        self.date_prefix_checkbox = QCheckBox()
+        self.date_prefix_checkbox.setChecked(False)
+        self.date_prefix_checkbox.toggled.connect(self.set_date_prefix)
+        self.date_prefix_checkbox.setToolTip(
+            "Prefix all filenames with date and time\n"
+            "yyyy-mm-dd_time.microseconds_yourfilename.jpeg"
+        )
+        self.date_prefix_checkbox.setShortcut("D")
+        layout.addLayout(layout_horizontal([lbl, self.date_prefix_checkbox]))
 
         # File name input
         self.fname_input = QLineEdit()
@@ -261,7 +275,16 @@ class MainWindowControls(QMainWindow):
             cli.show()
     
     def set_increment(self):
-        pass
+        if self.increment == True:
+            self.increment = False
+        else:
+            self.increment = True
+
+    def set_date_prefix(self):
+        if self.date_prefix == True:
+            self.date_prefix = False
+        else:
+            self.date_prefix = True
 
     def auto_exposure(self):
         """Turns automatic exposure of the camera on and off."""
@@ -275,15 +298,8 @@ class MainWindowControls(QMainWindow):
         self.cam.brightness = val
 
     def capture_image(self):
-        """Capture an image."""
         fmt = self.scope.image_format
-        fname_inp = self.fname_input.text()
-        if fname_inp != "":
-            fname_inp = f"_{fname_inp}"  # add underscore
-        fname = Path.joinpath(
-            self.scope.home_folder,
-            f"{str(datetime.now())}{fname_inp}.{fmt}".replace(" ", "_"),
-        )
+        fname = self.make_filename() + "." + str(fmt)
         self.cam.capture(
             str(fname), format=fmt
         )  # specifying the format double checks that it is possible
@@ -321,13 +337,7 @@ class MainWindowControls(QMainWindow):
             self.capture_button.setDisabled(True)
 
             fmt = self.scope.video_format
-            fname_inp = self.fname_input.text()
-            if fname_inp != "":
-                fname_inp = f"_{fname_inp}"  # add underscore
-            fname = Path.joinpath(
-                self.scope.home_folder,
-                f"{str(datetime.now())}{fname_inp}.{fmt}".replace(" ", "_"),
-            )
+            fname = self.make_filename() + "." + str(fmt)
             self.cam.start_recording(str(fname), format=fmt)
 
             if self.rec_time.text().replace(" ", "") != "":  # make sure not empty
@@ -347,6 +357,30 @@ class MainWindowControls(QMainWindow):
             self.is_recording = False
         # Anytime text is changed, the shortcut is cleared. So specify it again.
         self.rec_button.setShortcut("R")
+    
+    def make_filename(self):
+        #fname_inp = self.fname_input.text()
+        fname_inp = self.fname_input.text()
+        if self.increment:
+            #discard extension
+            initial_fname = fname_inp.split('.')[0]
+            try:
+                n = int(initial_fname[-1])
+                new_file = initial_fname[0:-1] + str(n+1)
+                self.fname_input.setText(new_file)
+            except:
+                pass
+        # if fname_inp != "":
+        #     fname_inp = f"_{fname_inp}"  # add underscore
+        #if the filename is empty, add a date anyway
+        if self.date_prefix == True or fname_inp == "":
+            fname_inp = f"{str(datetime.now())}_{fname_inp}"
+        fname_inp = Path.joinpath(
+            self.scope.home_folder,
+            fname_inp.replace(" ", "_"),
+        )
+        return str(fname_inp)
+
 
     def recording_timer_check(self):
         """Check and stop the recording if elapsed time larger than total time."""
