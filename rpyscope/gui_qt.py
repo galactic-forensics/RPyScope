@@ -24,7 +24,7 @@ from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QFont, QDoubleValidator
 
 from add_widgets import LineEditHistory
-from pyqtconfig import ConfigManager, ConfigDialog
+from pyqtconfig import ConfigManager, ConfigDialog, QSettingsManager
 from microscope import Microscope
 
 
@@ -46,7 +46,16 @@ class MainWindowControls(QMainWindow):
         self.setWindowTitle("RPyScope")
 
         # Load settings
-        self.config = ConfigManager(filename="~/.RPyScope.json")
+        default_settings = {
+            "open_cmd_startup": False,
+            "preview_x" : "310",
+            "preview_y" : "40",
+            "preview_h" : "900"
+        }
+
+        # note: the filename is relative to your location,
+        # where you are executing gui_qt.py from
+        self.config = ConfigManager(default_settings, filename="rpyscope-config.json")
 
         # Load Microscope interactions
         self.scope = Microscope()
@@ -190,7 +199,8 @@ class MainWindowControls(QMainWindow):
         layout.addWidget(self.capture_button)
 
         # open command line interface
-        self.open_cmd_window()
+        if self.config.get("open_cmd_startup"):
+            self.open_cmd_window()
 
     # SETUP #
 
@@ -215,6 +225,10 @@ class MainWindowControls(QMainWindow):
         config_dialog.setWindowTitle("Settings")
         config_dialog.accepted.connect(lambda: self.update_config(config_dialog.config))
         config_dialog.exec()
+    
+    def update_config(self, update):
+        self.config.set_many(update.as_dict())
+        self.config.save()
 
     def open_cmd_window(self):#, top, height):
             cli = CommandLineScope(parent=self, top=self.top + self.height + 50, cam=self.cam)
@@ -257,7 +271,13 @@ class MainWindowControls(QMainWindow):
         if not self.is_preview:  # not preview
             self.preview_button.setText("Stop Preview")
             self.preview_button.setStyleSheet(f"background-color:{self.col_red}")
-            self.cam.start_preview()
+            (w_camera,h_camera) = self.cam.resolution
+            aspect_ratio = w_camera / h_camera
+            x = int(self.config.get("preview_x"))
+            y = int(self.config.get("preview_y"))
+            h = int(self.config.get("preview_h"))
+            w = int(h * aspect_ratio)
+            self.cam.start_preview(fullscreen=False, window=(x,y,w,h))
             self.is_preview = True
         else:
             self.preview_button.setText("Start Preview")
