@@ -24,6 +24,7 @@ from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QFont, QDoubleValidator
 
 from add_widgets import LineEditHistory
+from pyqtconfig import ConfigManager, ConfigDialog
 from microscope import Microscope
 
 
@@ -37,12 +38,15 @@ class MainWindowControls(QMainWindow):
 
         # init and sizing
         super().__init__()
-        left = 0
-        top = 75
-        width = 180
-        height = 500
-        self.setGeometry(left, top, width, height)
+        self.left = 0
+        self.top = 75
+        self.width = 300
+        self.height = 700
+        self.setGeometry(self.left, self.top, self.width, self.height)
         self.setWindowTitle("RPyScope")
+
+        # Load settings
+        self.config = ConfigManager(filename="~/.RPyScope.json")
 
         # Load Microscope interactions
         self.scope = Microscope()
@@ -66,6 +70,12 @@ class MainWindowControls(QMainWindow):
         # layout
         layout = QVBoxLayout()  # main vbox layout
         main_widget.setLayout(layout)
+
+        # Settings button
+        self.settings_button = QPushButton("Settings")
+        self.settings_button.clicked.connect(self.open_settings)
+        self.settings_button.setToolTip("Change some settings")
+        layout.addWidget(self.settings_button)
 
         # Brightness & Contrast Labels
         blabel = QLabel("Brightness")
@@ -95,6 +105,12 @@ class MainWindowControls(QMainWindow):
         )
         layout.addLayout(layout_horizontal([lbl, self.auto_exp_checkbox]))
 
+        # command window
+        self.cmd_window_button = QPushButton("Command window")
+        self.cmd_window_button.clicked.connect(self.open_cmd_window)
+        self.cmd_window_button.setToolTip("Open a command window")
+        layout.addWidget(self.cmd_window_button)
+
         layout_hline(layout)
 
         # file management
@@ -106,6 +122,17 @@ class MainWindowControls(QMainWindow):
         )
         layout.addWidget(self.path_button)
         layout.addWidget(QLabel("File name:"))
+        
+        lbl = QLabel("Increment filename:")
+        self.increment_checkbox = QCheckBox()
+        self.increment_checkbox.setChecked(False)
+        self.increment_checkbox.toggled.connect(self.set_increment)
+        self.increment_checkbox.setToolTip(
+            "If the filename ends with a number\n"
+            "increment that number after every picture or recording"
+        )
+        layout.addLayout(layout_horizontal([lbl, self.increment_checkbox]))
+
         self.fname_input = QLineEdit()
         self.fname_input.setToolTip(
             "Select a filename. This will be appended\n" "to a time and date stamp."
@@ -163,8 +190,7 @@ class MainWindowControls(QMainWindow):
         layout.addWidget(self.capture_button)
 
         # open command line interface
-        cli = CommandLineScope(parent=self, top=top + height + 50, cam=self.cam)
-        cli.show()
+        self.open_cmd_window()
 
     # SETUP #
 
@@ -183,6 +209,19 @@ class MainWindowControls(QMainWindow):
         self.contr_slider.valueChanged.connect(lambda x: self.contrast_changed(x))
 
     # FUNCTIONS #
+
+    def open_settings(self):
+        config_dialog = ConfigDialog(self.config, self, cols=1)
+        config_dialog.setWindowTitle("Settings")
+        config_dialog.accepted.connect(lambda: self.update_config(config_dialog.config))
+        config_dialog.exec()
+
+    def open_cmd_window(self):#, top, height):
+            cli = CommandLineScope(parent=self, top=self.top + self.height + 50, cam=self.cam)
+            cli.show()
+    
+    def set_increment(self):
+        pass
 
     def auto_exposure(self):
         """Turns automatic exposure of the camera on and off."""
