@@ -38,7 +38,9 @@ You should be all set for installations!
 
 Next up,
 clone the repository from GitHub
-or download and unpack it.  
+or download an
+
+d unpack it.  
 **Note**: The repository is
 currently private,
 therefore you have to authenticate
