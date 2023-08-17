@@ -19,7 +19,8 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QFileDialog,
     QFrame,
-    QShortcut
+    QShortcut,
+    QErrorMessage
 )
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QFont, QDoubleValidator, QKeySequence
@@ -49,6 +50,10 @@ class MainWindowControls(QMainWindow):
         # Quit shortcut
         self.quit_sc = QShortcut(QKeySequence('Ctrl+Q'), self)
         self.quit_sc.activated.connect(sys.exit)
+
+        # Error messages
+        self.error_dialog = QErrorMessage()
+        self.error_dialog.setGeometry(5, 80, 300, 50)
 
         # Load settings
         default_settings = {
@@ -152,27 +157,26 @@ class MainWindowControls(QMainWindow):
         layout_hline(layout)
 
         # File path
-        self.path_button = QPushButton("Set Recording Path [Ctrl+P]")
+        self.path_label = QLabel("File path [Ctrl+P]:")
+        layout.addWidget(self.path_label)
+
+        self.path_button = QPushButton("Browse")
         self.path_button.clicked.connect(self.set_path)
         self.path_button.acceptDrops()
-        self.path_button.setToolTip(
-            "Select the path where images and videos\n" "will be stored."
+
+        layout.addLayout(layout_horizontal(
+            [self.path_label, self.path_button], align=True))
+
+        self.path_input = QLineEdit()
+        self.path_input.setText("/home/lpl/Desktop")
+        self.path_input.setToolTip(
+            "Enter the path to your working directory. Files will be saved here."
         )
-        self.path_button.setShortcut("Ctrl+P")
-        layout.addWidget(self.path_button)
-        
-        # File name increment
-        self.increment = False
-        lbl = QLabel("Increment filename [I]:")
-        self.increment_checkbox = QCheckBox()
-        self.increment_checkbox.setChecked(False)
-        self.increment_checkbox.toggled.connect(self.set_increment)
-        self.increment_checkbox.setToolTip(
-            "If the filename ends with a number\n"
-            "increment that number after every picture or recording"
-        )
-        self.increment_checkbox.setShortcut("I")
-        layout.addLayout(layout_horizontal([lbl, self.increment_checkbox], align=True))
+        self.path_input.returnPressed.connect(self.path_input.clearFocus)
+        layout.addWidget(self.path_input)
+
+        self.path_sc = QShortcut(QKeySequence('Ctrl+P'), self)
+        self.path_sc.activated.connect(self.path_input.setFocus)
 
         # File name date prefix
         self.date_prefix = False
@@ -237,6 +241,8 @@ class MainWindowControls(QMainWindow):
         layout.addWidget(self.rec_time)
         self.rec_time_sc = QShortcut(QKeySequence('T'), self)
         self.rec_time_sc.activated.connect(lambda : self.rec_time.setFocus())
+
+        # video recording
 
         self.rec_button = QPushButton("Start Recording [R]")
         self.rec_button.clicked.connect(self.record_video)
@@ -325,10 +331,17 @@ class MainWindowControls(QMainWindow):
 
     def capture_image(self):
         fmt = self.scope.image_format
-        fname = self.make_filename() + "." + str(fmt)
-        self.cam.capture(
-            str(fname), format=fmt
-        )  # specifying the format double checks that it is possible
+        if self.fname_ok():
+            fname = self.make_filename_with_path() + "." + str(fmt)
+            if not os.path.isfile(fname):
+                self.cam.capture(
+                    str(fname), format=fmt
+                )  # specifying the format double checks that it is possible
+                print("Image captured: " + str(fname))
+            else:
+                self.error_dialog.showMessage(
+                    "Error: " + fname + "  already exists"
+                )
 
     def contrast_changed(self, val):
         """Change brightness to value"""
@@ -358,19 +371,25 @@ class MainWindowControls(QMainWindow):
     def record_video(self):
         """Start and stop recording."""
         if not self.is_recording:  # not recording
-            self.rec_button.setText("Stop Recording [R]")
-            self.rec_button.setStyleSheet(f"background-color:{self.col_red}")
-            self.capture_button.setDisabled(True)
+            if self.fname_ok():
+                fmt = self.scope.video_format
+                fname = self.make_filename_with_path() + "." + str(fmt)
+                if not os.path.isfile(fname):
+                    self.rec_button.setText("Stop Recording [R]")
+                    self.rec_button.setStyleSheet(f"background-color:{self.col_red}")
+                    self.capture_button.setDisabled(True)
+                    
+                    self.cam.start_recording(fname, format=fmt)
 
-            fmt = self.scope.video_format
-            fname = self.make_filename() + "." + str(fmt)
-            self.cam.start_recording(str(fname), format=fmt)
+                    if self.rec_time.text().replace(" ", "") != "":  # make sure not empty
+                        if float(self.rec_time.text()) > 0:
+                            self.rec_timer.start()
 
-            if self.rec_time.text().replace(" ", "") != "":  # make sure not empty
-                if float(self.rec_time.text()) > 0:
-                    self.rec_timer.start()
-
-            self.is_recording = True
+                    self.is_recording = True
+                else:
+                    self.error_dialog.showMessage(
+                        "Error: " + fname + "  already exists"
+                    )
         else:
             self.rec_button.setText("Start Recording [R]")
             self.rec_button.setStyleSheet(f"background-color:{self.col_green}")
@@ -384,28 +403,31 @@ class MainWindowControls(QMainWindow):
         # Anytime text is changed, the shortcut is cleared. So specify it again.
         self.rec_button.setShortcut("R")
     
-    def make_filename(self):
-        #fname_inp = self.fname_input.text()
+    def make_filename_with_path(self):
         fname_inp = self.fname_input.text()
-        if self.increment:
-            #discard extension
-            initial_fname = fname_inp.split('.')[0]
-            try:
-                n = int(initial_fname[-1])
-                new_file = initial_fname[0:-1] + str(n+1)
-                self.fname_input.setText(new_file)
-            except:
-                pass
-        # if fname_inp != "":
-        #     fname_inp = f"_{fname_inp}"  # add underscore
         #if the filename is empty, add a date anyway
-        if self.date_prefix == True or fname_inp == "":
-            fname_inp = f"{str(datetime.now())}_{fname_inp}"
+        if self.date_prefix == True:
+            prefix = str(datetime.now()).replace(".", "_")
+            if fname_inp == "":
+                fname_inp = prefix
+            else:
+                fname_inp = prefix + "_" + fname_inp
+        path =  Path(self.path_input.text())
         fname_inp = Path.joinpath(
-            self.scope.home_folder,
-            fname_inp.replace(" ", "_"),
+            path, fname_inp.replace(" ", "_"),
         )
         return str(fname_inp)
+
+    def fname_ok(self):
+        #check if the filename is not empty
+        fname = self.fname_input.text()
+        if len(fname)==0 and self.date_prefix==False:
+            self.error_dialog.showMessage(
+                "Error: File name can't be empty if date prefix \
+                is unchecked.")
+            return False
+        else:
+            return True
 
 
     def recording_timer_check(self):
@@ -422,9 +444,10 @@ class MainWindowControls(QMainWindow):
 
     def set_path(self):
         """Set the recording path via QFileDialogue."""
-        path = QFileDialog.getExistingDirectory(self, "Select Directory", "~")
+        path = QFileDialog.getExistingDirectory(self, "Select Directory", self.path_input.text())
         if path != "":
-            self.scope.home_folder = Path(path)
+            self.path_input.setText(str(path))
+
 
 
 class CommandLineScope(QMainWindow):
