@@ -93,6 +93,27 @@ class MainWindowControls(QMainWindow):
         self.settings_button.setShortcut("S")
         layout.addWidget(self.settings_button)
 
+        # Resolution
+        res_label = QLabel("Resolution")
+
+        self.res_input_w = QLineEdit()
+        self.res_input_w.setToolTip("Enter the desired width of the image")
+        self.res_input_w.returnPressed.connect(self.res_input_w.clearFocus)
+
+        self.res_input_h = QLineEdit()
+        self.res_input_h.setToolTip("Enter the desired height of the image")
+        self.res_input_h.returnPressed.connect(self.res_input_h.clearFocus)
+
+        self.res_reset_button = QPushButton("default")
+        #self.res_reset_button.clicked.connect(self.open_settings)
+        self.res_reset_button.setToolTip("Set resoltion to default (...x...)")
+
+        layout.addLayout(layout_horizontal(
+            [res_label, self.res_input_w, QLabel("x"), self.res_input_h, self.res_reset_button],
+            align=False))
+
+        #layout.addLayout(layout_horizontal([self.bright_slider, self.contr_slider], align=False))
+
         # Brightness & Contrast Labels
         blabel = QLabel("Brightness")
         font_center_bold(blabel)
@@ -255,13 +276,13 @@ class MainWindowControls(QMainWindow):
         self.bright_slider.setMinimum(0)
         self.bright_slider.setMaximum(100)
         self.bright_slider.setValue(50)
-        self.bright_slider.valueChanged.connect(lambda x: self.brightness_changed(x))
+        self.bright_slider.valueChanged.connect(self.brightness_changed)
 
         # contrast slider
         self.contr_slider.setMinimum(-100)
         self.contr_slider.setMaximum(100)
         self.contr_slider.setValue(0)
-        self.contr_slider.valueChanged.connect(lambda x: self.contrast_changed(x))
+        self.contr_slider.valueChanged.connect(self.contrast_changed)
 
     # FUNCTIONS #
 
