@@ -331,7 +331,7 @@ class MainWindowControls(QMainWindow):
 
     def capture_image(self):
         fmt = self.scope.image_format
-        if self.fname_ok():
+        if self.fname_ok() and self.path_ok():
             fname = self.make_filename_with_path() + "." + str(fmt)
             if not os.path.isfile(fname):
                 self.cam.capture(
@@ -371,7 +371,7 @@ class MainWindowControls(QMainWindow):
     def record_video(self):
         """Start and stop recording."""
         if not self.is_recording:  # not recording
-            if self.fname_ok():
+            if self.fname_ok() and self.path_ok:
                 fmt = self.scope.video_format
                 fname = self.make_filename_with_path() + "." + str(fmt)
                 if not os.path.isfile(fname):
@@ -428,6 +428,18 @@ class MainWindowControls(QMainWindow):
             return False
         else:
             return True
+    
+    def path_ok(self):
+        dir = self.path_input.text()
+        if not os.path.isdir(dir):
+            self.error_dialog.showMessage(
+                "Error: The directory " + dir +
+                "does not exist"
+            )
+            return False
+        else:
+            return True
+    
 
 
     def recording_timer_check(self):
