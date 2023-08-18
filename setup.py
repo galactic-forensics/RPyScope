@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name="RPyScope",
     version="0.0.1",
-    packages=["rpyscope"],
+    packages=["rpyscope", "rpyscope.cameras"],
     url="",
     license="MIT",
     author="Reto Trappitsch",
