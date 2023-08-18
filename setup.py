@@ -9,4 +9,5 @@ setup(
     author="Reto Trappitsch",
     author_email="reto@galactic-forensics.space",
     description="Microscope package for Raspberry Pi and PiCam HQ",
+    install_requires=["pyqtconfig"]
 )
