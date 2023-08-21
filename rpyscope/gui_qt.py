@@ -417,7 +417,7 @@ class CommandLineScope(QMainWindow):
         :param top: Top adjuster, where to start, in px, defaults to 0
         :type top: int
         """
-        super(CommandLineScope, self).__init__(parent)
+        super().__init__(parent)
 
         self.parent = parent
         self.cam = cam
