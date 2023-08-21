@@ -45,7 +45,7 @@ class LineEditHistory(QLineEdit):
 
     def keyPressEvent(self, a0):
         """Handle key press events -> go to _history for arrow up and down."""
-        super(LineEditHistory, self).keyPressEvent(a0)
+        super().keyPressEvent(a0)
 
         if a0.key() == Qt.Key_Return or a0.key() == Qt.Key_Enter:
             self._history_counter = 0
