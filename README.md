@@ -11,7 +11,7 @@ We assume that you have the following components available:
  - A raspberry pi with a camera that is enabled
  - A stock installation of Raspberry Pi OS
 
-If you are not sure if your camera is enabled, 
+If you are not sure if your camera is enabled,
 try and take an image according to the getting started guide
 [here](https://static.raspberrypi.org/files/product-guides/Raspberry_Pi_High_Quality_Camera_Getting_Started.pdf).
 
@@ -38,8 +38,8 @@ You should be all set for installations!
 
 Next up,
 clone the repository from GitHub
-or download and 
-unpack it.  
+or download and
+unpack it.
 **Note**: The repository is
 currently private,
 therefore you have to authenticate
@@ -50,7 +50,7 @@ by typing:
 ```bash
 git clone https://github.com/galactic-forensics/RPyScope.git
 ```
-for access via `https`, or 
+for access via `https`, or
 ```bash
 git clone git@github.com:galactic-forensics/RPyScope.git
 ```
@@ -90,7 +90,7 @@ in order to update your branch to the latest one.
 
 ## Usage
 
-Many tool tips have been implemented. 
+Many tool tips have been implemented.
 Hover over something you want to adjust and read the tool tip.
 Here, only the functions that are not completely self-explanatory
 are discussed.
@@ -100,14 +100,14 @@ are discussed.
 Using the sliders,
 you can live-adjust brightness and contrast of the camera.
 Generally,
-the camera is set up such that 
+the camera is set up such that
 automatic expsosure is turned on (checked).
 For details, see
 [here](https://picamera.readthedocs.io/en/release-1.13/fov.html)
 on what that entails.
 
-When you turn automatic exposure off, 
-the camera will not regulate the shutter speed, 
+When you turn automatic exposure off,
+the camera will not regulate the shutter speed,
 or digital and analog gain anymore.
 This is intended for taking images under stable conditions
 and follows the description in
@@ -117,14 +117,14 @@ You can still adjust brightness and contrast.
 
 ### Recording to files
 
-The recording path can be set by 
-clicking the button 
+The recording path can be set by
+clicking the button
 `Set Recording Path`.
 This will specify which folder new files get saved to.
 Putting something into the file name input box
 will furthermore choose this filename.
 *Note* that currently,
-a full timestamp will be attached to the beginning of 
+a full timestamp will be attached to the beginning of
 each file name.
 
 By default,
@@ -146,19 +146,19 @@ after the preview starts.
 
 You can record videos by clicking the `Start Recording` button.
 The video recorded will be around as long as you set in the
-recording time input field. 
+recording time input field.
 Increments of 0.1 milliseconds are currently considered.
 You can always stop the recording early by pressing
 the `Stop Recording` button.
 
 If you leave the recording time at 0,
-video will be recorded until 
+video will be recorded until
 you press the `Stop Recording` button.
 
 The video format that is outputted is currently fixed
 to `.h264`.
 
-**Limitation:** While images can be captured 
+**Limitation:** While images can be captured
 during recordings,
 this functionality is currently not implemented.
 
@@ -167,18 +167,18 @@ this functionality is currently not implemented.
 
 If you want to take a photo,
 press the `Capture Image` button
-and the software will save an image in the 
-`.jpeg` format in the location of your choice. 
+and the software will save an image in the
+`.jpeg` format in the location of your choice.
 Other formats are currently not supported,
-but will be in the future. 
-You can also easily change the default 
+but will be in the future.
+You can also easily change the default
 by hacking around in the code :)
 
 ### Command line interface (CLI)
 
 The second window is the command line interface.
-Many features are not currently implemented, 
-however, 
+Many features are not currently implemented,
+however,
 if you can work with the `picamera` class,
 you can execute commands here directly from the software.
 The camera itself is stored into an instance called `cam`.
@@ -204,11 +204,11 @@ a messagebox will be displayed.
 
 **Important:**
 You can run any python command you want.
-However, 
+However,
 you can also interfere with the software itself.
 The idea of the CLI is to give the user an easy way
 of modifying stuff with commands and to play / explore the settings.
-If you need stuff over and over again, 
+If you need stuff over and over again,
 it might be easier to implement it into the software.
 Also: you might be able to do real damage with the CLI to all your data,
 because you have the full power of python at your fingertips.
@@ -219,3 +219,21 @@ Enjoy!
 For issues, problems, questions,
 contributions, feature requests,
 please raise an Issue on GitHub.
+
+
+## Development
+
+**This section is work in progress, needs:**
+
+- Code of Conduct
+- Some details on dev guidelines
+- Test requirements
+
+### pre-commit
+
+We use pre-commit to enfore formatting guidelines automatically.
+Make sure you have `pre-commit` installed,
+e.g., via `pip install pre-commit`.
+From the folder where this repo is,
+run `pre-commit install` to create the hook.
+Now, automatic formatting changes will be done on code-commits.
