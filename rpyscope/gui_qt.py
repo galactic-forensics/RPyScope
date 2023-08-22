@@ -20,7 +20,7 @@ from PyQt5.QtWidgets import (
     QFileDialog,
     QFrame,
     QShortcut,
-    QErrorMessage
+    QErrorMessage,
 )
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QFont, QDoubleValidator, QKeySequence
@@ -48,7 +48,7 @@ class MainWindowControls(QMainWindow):
         self.setWindowTitle("RPyScope")
 
         # Quit shortcut
-        self.quit_sc = QShortcut(QKeySequence('Ctrl+Q'), self)
+        self.quit_sc = QShortcut(QKeySequence("Ctrl+Q"), self)
         self.quit_sc.activated.connect(sys.exit)
 
         # Error messages
@@ -59,9 +59,9 @@ class MainWindowControls(QMainWindow):
         default_settings = {
             "open_preview_startup": True,
             "open_cmd_startup": False,
-            "preview_x" : "310",
-            "preview_y" : "40",
-            "preview_h" : "900"
+            "preview_x": "310",
+            "preview_y": "40",
+            "preview_h": "900",
         }
 
         # note: the filename is relative to your location,
@@ -110,14 +110,23 @@ class MainWindowControls(QMainWindow):
         self.res_input_h.returnPressed.connect(self.res_input_h.clearFocus)
 
         self.res_reset_button = QPushButton("default")
-        #self.res_reset_button.clicked.connect(self.open_settings)
+        # self.res_reset_button.clicked.connect(self.open_settings)
         self.res_reset_button.setToolTip("Set resoltion to default (...x...)")
 
-        layout.addLayout(layout_horizontal(
-            [res_label, self.res_input_w, QLabel("x"), self.res_input_h, self.res_reset_button],
-            align=False))
+        layout.addLayout(
+            layout_horizontal(
+                [
+                    res_label,
+                    self.res_input_w,
+                    QLabel("x"),
+                    self.res_input_h,
+                    self.res_reset_button,
+                ],
+                align=False,
+            )
+        )
 
-        #layout.addLayout(layout_horizontal([self.bright_slider, self.contr_slider], align=False))
+        # layout.addLayout(layout_horizontal([self.bright_slider, self.contr_slider], align=False))
 
         # Brightness & Contrast Labels
         blabel = QLabel("Brightness")
@@ -130,7 +139,9 @@ class MainWindowControls(QMainWindow):
         self.bright_slider = QSlider(Qt.Vertical)
         self.contr_slider = QSlider(Qt.Vertical)
         self.setup_sliders()
-        layout.addLayout(layout_horizontal([self.bright_slider, self.contr_slider], align=False))
+        layout.addLayout(
+            layout_horizontal([self.bright_slider, self.contr_slider], align=False)
+        )
         self.reset_bright_contr_button = QPushButton("Reset B/C")
         self.reset_bright_contr_button.clicked.connect(self.reset_bright_contr)
         self.reset_bright_contr_button.setToolTip("Reset brightness and contrast.")
@@ -157,15 +168,16 @@ class MainWindowControls(QMainWindow):
         layout_hline(layout)
 
         # File path
-        self.path_label = QLabel("File path [Ctrl+P]:")
+        self.path_label = QLabel("File path [Alt+P]:")
         layout.addWidget(self.path_label)
 
         self.path_button = QPushButton("Browse")
         self.path_button.clicked.connect(self.set_path)
         self.path_button.acceptDrops()
 
-        layout.addLayout(layout_horizontal(
-            [self.path_label, self.path_button], align=True))
+        layout.addLayout(
+            layout_horizontal([self.path_label, self.path_button], align=True)
+        )
 
         self.path_input = QLineEdit()
         self.path_input.setText("/home/lpl/Desktop")
@@ -175,7 +187,7 @@ class MainWindowControls(QMainWindow):
         self.path_input.returnPressed.connect(self.path_input.clearFocus)
         layout.addWidget(self.path_input)
 
-        self.path_sc = QShortcut(QKeySequence('Ctrl+P'), self)
+        self.path_sc = QShortcut(QKeySequence("Alt+P"), self)
         self.path_sc.activated.connect(self.path_input.setFocus)
 
         # File name date prefix
@@ -189,7 +201,9 @@ class MainWindowControls(QMainWindow):
             "yyyy-mm-dd_time.microseconds_yourfilename.jpeg"
         )
         self.date_prefix_checkbox.setShortcut("D")
-        layout.addLayout(layout_horizontal([lbl, self.date_prefix_checkbox], align=True))
+        layout.addLayout(
+            layout_horizontal([lbl, self.date_prefix_checkbox], align=True)
+        )
 
         # File name label
         self.fname_label = QLabel("File name [F]:")
@@ -204,7 +218,7 @@ class MainWindowControls(QMainWindow):
         layout.addWidget(self.fname_input)
 
         # File name shortcut
-        self.fname_sc = QShortcut(QKeySequence('F'), self)
+        self.fname_sc = QShortcut(QKeySequence("F"), self)
         self.fname_sc.activated.connect(self.fname_input.setFocus)
 
         layout_hline(layout)
@@ -239,8 +253,8 @@ class MainWindowControls(QMainWindow):
         )
         self.rec_time.returnPressed.connect(self.rec_time.clearFocus)
         layout.addWidget(self.rec_time)
-        self.rec_time_sc = QShortcut(QKeySequence('T'), self)
-        self.rec_time_sc.activated.connect(lambda : self.rec_time.setFocus())
+        self.rec_time_sc = QShortcut(QKeySequence("T"), self)
+        self.rec_time_sc.activated.connect(lambda: self.rec_time.setFocus())
 
         # video recording
 
@@ -269,7 +283,7 @@ class MainWindowControls(QMainWindow):
         # open command line interface
         if self.config.get("open_cmd_startup"):
             self.open_cmd_window()
-        
+
         # open preview
         if self.config.get("open_preview_startup"):
             self.preview_cam()
@@ -297,15 +311,17 @@ class MainWindowControls(QMainWindow):
         config_dialog.setWindowTitle("Settings")
         config_dialog.accepted.connect(lambda: self.update_config(config_dialog.config))
         config_dialog.exec()
-    
+
     def update_config(self, update):
         self.config.set_many(update.as_dict())
         self.config.save()
 
-    def open_cmd_window(self):#, top, height):
-            cli = CommandLineScope(parent=self, top=self.top + self.height + 50, cam=self.cam)
-            cli.show()
-    
+    def open_cmd_window(self):  # , top, height):
+        cli = CommandLineScope(
+            parent=self, top=self.top + self.height + 50, cam=self.cam
+        )
+        cli.show()
+
     def set_increment(self):
         if self.increment == True:
             self.increment = False
@@ -339,9 +355,7 @@ class MainWindowControls(QMainWindow):
                 )  # specifying the format double checks that it is possible
                 print("Image captured: " + str(fname))
             else:
-                self.error_dialog.showMessage(
-                    "Error: " + fname + "  already exists"
-                )
+                self.error_dialog.showMessage("Error: " + fname + "  already exists")
 
     def contrast_changed(self, val):
         """Change brightness to value"""
@@ -352,13 +366,13 @@ class MainWindowControls(QMainWindow):
         if not self.is_preview:  # not preview
             self.preview_button.setText("Stop Preview [P]")
             self.preview_button.setStyleSheet(f"background-color:{self.col_red}")
-            (w_camera,h_camera) = self.cam.resolution
+            (w_camera, h_camera) = self.cam.resolution
             aspect_ratio = w_camera / h_camera
             x = int(self.config.get("preview_x"))
             y = int(self.config.get("preview_y"))
             h = int(self.config.get("preview_h"))
             w = int(h * aspect_ratio)
-            self.cam.start_preview(fullscreen=False, window=(x,y,w,h))
+            self.cam.start_preview(fullscreen=False, window=(x, y, w, h))
             self.is_preview = True
         else:
             self.preview_button.setText("Start Preview [P]")
@@ -378,10 +392,12 @@ class MainWindowControls(QMainWindow):
                     self.rec_button.setText("Stop Recording [R]")
                     self.rec_button.setStyleSheet(f"background-color:{self.col_red}")
                     self.capture_button.setDisabled(True)
-                    
+
                     self.cam.start_recording(fname, format=fmt)
 
-                    if self.rec_time.text().replace(" ", "") != "":  # make sure not empty
+                    if (
+                        self.rec_time.text().replace(" ", "") != ""
+                    ):  # make sure not empty
                         if float(self.rec_time.text()) > 0:
                             self.rec_timer.start()
 
@@ -402,45 +418,44 @@ class MainWindowControls(QMainWindow):
             self.is_recording = False
         # Anytime text is changed, the shortcut is cleared. So specify it again.
         self.rec_button.setShortcut("R")
-    
+
     def make_filename_with_path(self):
         fname_inp = self.fname_input.text()
-        #if the filename is empty, add a date anyway
+        # if the filename is empty, add a date anyway
         if self.date_prefix == True:
             prefix = str(datetime.now()).replace(".", "_")
             if fname_inp == "":
                 fname_inp = prefix
             else:
                 fname_inp = prefix + "_" + fname_inp
-        path =  Path(self.path_input.text())
+        path = Path(self.path_input.text())
         fname_inp = Path.joinpath(
-            path, fname_inp.replace(" ", "_"),
+            path,
+            fname_inp.replace(" ", "_"),
         )
         return str(fname_inp)
 
     def fname_ok(self):
-        #check if the filename is not empty
+        # check if the filename is not empty
         fname = self.fname_input.text()
-        if len(fname)==0 and self.date_prefix==False:
+        if len(fname) == 0 and self.date_prefix == False:
             self.error_dialog.showMessage(
                 "Error: File name can't be empty if date prefix \
-                is unchecked.")
-            return False
-        else:
-            return True
-    
-    def path_ok(self):
-        dir = self.path_input.text()
-        if not os.path.isdir(dir):
-            self.error_dialog.showMessage(
-                "Error: The directory " + dir +
-                "does not exist"
+                is unchecked."
             )
             return False
         else:
             return True
-    
 
+    def path_ok(self):
+        dir = self.path_input.text()
+        if not os.path.isdir(dir):
+            self.error_dialog.showMessage(
+                "Error: The directory " + dir + "does not exist"
+            )
+            return False
+        else:
+            return True
 
     def recording_timer_check(self):
         """Check and stop the recording if elapsed time larger than total time."""
@@ -456,10 +471,11 @@ class MainWindowControls(QMainWindow):
 
     def set_path(self):
         """Set the recording path via QFileDialogue."""
-        path = QFileDialog.getExistingDirectory(self, "Select Directory", self.path_input.text())
+        path = QFileDialog.getExistingDirectory(
+            self, "Select Directory", self.path_input.text()
+        )
         if path != "":
             self.path_input.setText(str(path))
-
 
 
 class CommandLineScope(QMainWindow):
@@ -562,8 +578,8 @@ def layout_horizontal(items, align):
     :rtype: Qt.QHBoxLayout
     """
     layout = QHBoxLayout()
-    if align==True:
-        for i in range(len(items)-1):
+    if align == True:
+        for i in range(len(items) - 1):
             layout.addWidget(items[i])
             layout.addStretch()
         layout.addWidget(items[-1])
