@@ -62,6 +62,7 @@ class MainWindowControls(QMainWindow):
             "preview_x": "310",
             "preview_y": "40",
             "preview_h": "900",
+            "default_directory": os.path.expanduser("~/Desktop"),
         }
 
         # note: the filename is relative to your location,
@@ -180,7 +181,7 @@ class MainWindowControls(QMainWindow):
         )
 
         self.path_input = QLineEdit()
-        self.path_input.setText("/home/lpl/Desktop")
+        self.path_input.setText(self.config.get("default_directory"))
         self.path_input.setToolTip(
             "Enter the path to your working directory. Files will be saved here."
         )
