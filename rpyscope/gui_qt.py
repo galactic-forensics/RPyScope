@@ -53,16 +53,18 @@ class MainWindowControls(QMainWindow):
 
         # Error messages
         self.error_dialog = QErrorMessage()
-        self.error_dialog.setGeometry(5, 80, 300, 50)
+        self.error_dialog.setGeometry(5, 80, 300, 200)
 
         # Load settings
         default_settings = {
             "open_preview_startup": True,
             "open_cmd_startup": False,
+            "default_directory": os.path.expanduser("~/Desktop"),
             "preview_x": "310",
             "preview_y": "40",
             "preview_h": "900",
-            "default_directory": os.path.expanduser("~/Desktop"),
+            "default_resolution": "1920x1080",
+            "default_fps": "30",
         }
 
         # note: the filename is relative to your location,
@@ -102,36 +104,6 @@ class MainWindowControls(QMainWindow):
         self.settings_button.setShortcut("S")
         layout.addWidget(self.settings_button)
 
-        # Resolution
-        res_label = QLabel("Resolution")
-
-        self.res_input_w = QLineEdit()
-        self.res_input_w.setToolTip("Enter the desired width of the image")
-        self.res_input_w.returnPressed.connect(self.res_input_w.clearFocus)
-
-        self.res_input_h = QLineEdit()
-        self.res_input_h.setToolTip("Enter the desired height of the image")
-        self.res_input_h.returnPressed.connect(self.res_input_h.clearFocus)
-
-        self.res_reset_button = QPushButton("default")
-        # self.res_reset_button.clicked.connect(self.open_settings)
-        self.res_reset_button.setToolTip("Set resoltion to default")
-
-        layout.addLayout(
-            layout_horizontal(
-                [
-                    res_label,
-                    self.res_input_w,
-                    QLabel("x"),
-                    self.res_input_h,
-                    self.res_reset_button,
-                ],
-                align=False,
-            )
-        )
-
-        # layout.addLayout(layout_horizontal([self.bright_slider, self.contr_slider], align=False))
-
         # Brightness & Contrast Labels
         blabel = QLabel("Brightness")
         font_center_bold(blabel)
@@ -161,6 +133,30 @@ class MainWindowControls(QMainWindow):
             "See Section 3.5 in PiCamera documentation."
         )
         layout.addLayout(layout_horizontal([lbl, self.auto_exp_checkbox], align=True))
+
+        # Resolution
+        layout.addWidget(QLabel("Resolution (w x h) [Alt+R]"))
+
+        self.res_input = QLineEdit()
+        self.res_input.setToolTip("Set the resolution (width x height)")
+        self.res_input.returnPressed.connect(self.res_input.clearFocus)
+
+        self.res_reset_button = QPushButton("default")
+        self.res_reset_button.clicked.connect(self.resolution_reset)
+
+        layout.addLayout(
+            layout_horizontal(
+                [
+                    self.res_input,
+                    self.res_reset_button,
+                ],
+                align=True,
+            )
+        )
+        self.resolution_reset()
+
+        self.res_sc = QShortcut(QKeySequence("Alt+R"), self)
+        self.res_sc.activated.connect(self.res_input.setFocus)
 
         # command window
         self.cmd_window_button = QPushButton("Command window [C]")
@@ -356,6 +352,7 @@ class MainWindowControls(QMainWindow):
         if self.fname_ok() and self.path_ok():
             fname = self.make_filename_with_path() + "." + str(fmt)
             if not os.path.isfile(fname):
+                self.set_resolution()
                 self.cam.capture(
                     str(fname), format=fmt
                 )  # specifying the format double checks that it is possible
@@ -370,6 +367,7 @@ class MainWindowControls(QMainWindow):
     def preview_cam(self):
         """Preview camera."""
         if not self.is_preview:  # not preview
+            self.set_resolution()
             self.preview_button.setText("Stop Preview [P]")
             self.preview_button.setStyleSheet(f"background-color:{self.col_red}")
             (w_camera, h_camera) = self.cam.resolution
@@ -395,6 +393,8 @@ class MainWindowControls(QMainWindow):
                 fmt = self.scope.video_format
                 fname = self.make_filename_with_path() + "." + str(fmt)
                 if not os.path.isfile(fname):
+                    self.set_resolution()
+                    self.set_fps()
                     self.rec_button.setText("Stop Recording [R]")
                     self.rec_button.setStyleSheet(f"background-color:{self.col_red}")
                     self.capture_button.setDisabled(True)
@@ -478,6 +478,21 @@ class MainWindowControls(QMainWindow):
         )
         if path != "":
             self.path_input.setText(str(path))
+
+    def resolution_reset(self):
+        self.res_input.setText(self.config.get("default_resolution"))
+
+    def set_resolution(self):
+        if self.cam.resolution != self.res_input.text():
+            previous_resolution = self.cam.resolution
+            try:
+                self.cam.resolution = self.res_input.text()
+            except:
+                self.res_input.setText(str(previous_resolution))
+                self.cam.resolution = previous_resolution
+
+    def set_fps(self):
+        pass
 
 
 class CommandLineScope(QMainWindow):
