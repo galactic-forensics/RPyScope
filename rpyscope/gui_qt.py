@@ -67,7 +67,10 @@ class MainWindowControls(QMainWindow):
 
         # note: the filename is relative to your location,
         # where you are executing gui_qt.py from
-        self.config = ConfigManager(default_settings, filename="rpyscope-config.json")
+        self.config = ConfigManager(
+            default_settings,
+            filename=os.path.expanduser("~/.config/rpyscope-config.json"),
+        )
 
         # Load Microscope interactions
         self.scope = Microscope()
