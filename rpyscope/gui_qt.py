@@ -427,18 +427,14 @@ class MainWindowControls(QMainWindow):
 
     def make_filename_with_path(self):
         fname_inp = self.fname_input.text()
-        # if the filename is empty, add a date anyway
         if self.date_prefix == True:
-            prefix = str(datetime.now()).replace(".", "_")
-            if fname_inp == "":
-                fname_inp = prefix
-            else:
-                fname_inp = prefix + "_" + fname_inp
+            prefix = str(datetime.now())
+            fname_inp = prefix + "_" + fname_inp
+        fname_inp = fname_inp.replace(".", "_")
+        fname_inp = fname_inp.replace(":", "_")
+        fname_inp = fname_inp.replace(" ", "_")
         path = Path(self.path_input.text())
-        fname_inp = Path.joinpath(
-            path,
-            fname_inp.replace(" ", "_"),
-        )
+        fname_inp = Path.joinpath(path, fname_inp)
         return str(fname_inp)
 
     def fname_ok(self):
