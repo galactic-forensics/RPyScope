@@ -115,7 +115,7 @@ class MainWindowControls(QMainWindow):
 
         self.res_reset_button = QPushButton("default")
         # self.res_reset_button.clicked.connect(self.open_settings)
-        self.res_reset_button.setToolTip("Set resoltion to default (...x...)")
+        self.res_reset_button.setToolTip("Set resoltion to default")
 
         layout.addLayout(
             layout_horizontal(
@@ -202,7 +202,7 @@ class MainWindowControls(QMainWindow):
         self.date_prefix_checkbox.toggled.connect(self.set_date_prefix)
         self.date_prefix_checkbox.setToolTip(
             "Prefix all filenames with date and time\n"
-            "yyyy-mm-dd_time.microseconds_yourfilename.jpeg"
+            "yyyy-mm-dd_hh_mm_ss_microseconds_yourfilename.jpeg"
         )
         self.date_prefix_checkbox.setShortcut("D")
         layout.addLayout(
@@ -216,7 +216,8 @@ class MainWindowControls(QMainWindow):
         # File name input
         self.fname_input = QLineEdit()
         self.fname_input.setToolTip(
-            "Select a filename. This will be appended\n" "to a time and date stamp."
+            "Select a filename for your photo or video.\n"
+            "The appropriate extension will be appended."
         )
         self.fname_input.returnPressed.connect(self.fname_input.clearFocus)
         layout.addWidget(self.fname_input)
@@ -234,10 +235,11 @@ class MainWindowControls(QMainWindow):
         self.is_preview = False
         self.preview_button.setStyleSheet(f"background-color:{self.col_green}")
         self.preview_button.setToolTip(
-            "Start / Stop the video preview. The preview\n"
-            "is directly managed by the RPi and is sent\n"
-            "directly to your GPU. You might not see this\n"
-            "program anymore, which could be an issue."
+            "Start / Stop the camera preview. The preview\n"
+            "is directly drawn onto the display, bypassing\n"
+            "the window manager. If it covers this program,\n"
+            "you can change preview size and position in the\n"
+            "settings."
         )
         self.preview_button.setShortcut("P")
         layout.addWidget(self.preview_button)
@@ -279,7 +281,7 @@ class MainWindowControls(QMainWindow):
         self.capture_button.setShortcut("Space")
         self.capture_button.clicked.connect(self.capture_image)
         self.capture_button.setToolTip(
-            "Capture an image. Can currently only\n" "be done if video is not recorded."
+            "Capture an image. Can only\n" "be done when video is not recording."
         )
         self.capture_button.setShortcut("Space")
         layout.addWidget(self.capture_button)
