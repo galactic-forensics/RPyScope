@@ -455,7 +455,7 @@ class MainWindowControls(QMainWindow):
         dir = self.path_input.text()
         if not os.path.isdir(dir):
             self.error_dialog.showMessage(
-                "Error: The directory " + dir + "does not exist"
+                "Error: The directory " + dir + " does not exist"
             )
             return False
         else:
