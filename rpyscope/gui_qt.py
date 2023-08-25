@@ -19,11 +19,14 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QFileDialog,
     QFrame,
+    QShortcut,
+    QErrorMessage,
 )
 from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtGui import QFont, QDoubleValidator
+from PyQt5.QtGui import QFont, QDoubleValidator, QKeySequence
 
 from add_widgets import LineEditHistory
+from pyqtconfig import ConfigManager, ConfigDialog, QSettingsManager
 from microscope import Microscope
 
 
@@ -37,12 +40,39 @@ class MainWindowControls(QMainWindow):
 
         # init and sizing
         super().__init__()
-        left = 0
-        top = 75
-        width = 180
-        height = 500
-        self.setGeometry(left, top, width, height)
+        self.left = 0
+        self.top = 75
+        self.width = 300
+        self.height = 700
+        self.setGeometry(self.left, self.top, self.width, self.height)
         self.setWindowTitle("RPyScope")
+
+        # Quit shortcut
+        self.quit_sc = QShortcut(QKeySequence("Ctrl+Q"), self)
+        self.quit_sc.activated.connect(sys.exit)
+
+        # Error messages
+        self.error_dialog = QErrorMessage()
+        self.error_dialog.setGeometry(5, 80, 300, 200)
+
+        # Load settings
+        default_settings = {
+            "open_preview_startup": True,
+            "open_cmd_startup": False,
+            "default_directory": os.path.expanduser("~/Desktop"),
+            "preview_x": "310",
+            "preview_y": "40",
+            "preview_h": "900",
+            "default_resolution": "1920x1080",
+            "default_framerate": "30",
+        }
+
+        # note: the filename is relative to your location,
+        # where you are executing gui_qt.py from
+        self.config = ConfigManager(
+            default_settings,
+            filename=os.path.expanduser("~/.config/rpyscope-config.json"),
+        )
 
         # Load Microscope interactions
         self.scope = Microscope()
@@ -67,18 +97,27 @@ class MainWindowControls(QMainWindow):
         layout = QVBoxLayout()  # main vbox layout
         main_widget.setLayout(layout)
 
+        # Settings button
+        self.settings_button = QPushButton("Settings [S]")
+        self.settings_button.clicked.connect(self.open_settings)
+        self.settings_button.setToolTip("Change some settings")
+        self.settings_button.setShortcut("S")
+        layout.addWidget(self.settings_button)
+
         # Brightness & Contrast Labels
         blabel = QLabel("Brightness")
         font_center_bold(blabel)
         clabel = QLabel("Contrast")
         font_center_bold(clabel)
-        layout.addLayout(layout_horizontal([blabel, clabel]))
+        layout.addLayout(layout_horizontal([blabel, clabel], align=False))
 
         # Sliders
         self.bright_slider = QSlider(Qt.Vertical)
         self.contr_slider = QSlider(Qt.Vertical)
         self.setup_sliders()
-        layout.addLayout(layout_horizontal([self.bright_slider, self.contr_slider]))
+        layout.addLayout(
+            layout_horizontal([self.bright_slider, self.contr_slider], align=False)
+        )
         self.reset_bright_contr_button = QPushButton("Reset B/C")
         self.reset_bright_contr_button.clicked.connect(self.reset_bright_contr)
         self.reset_bright_contr_button.setToolTip("Reset brightness and contrast.")
@@ -93,46 +132,145 @@ class MainWindowControls(QMainWindow):
             "Enable or disable automatic exposure.\n"
             "See Section 3.5 in PiCamera documentation."
         )
-        layout.addLayout(layout_horizontal([lbl, self.auto_exp_checkbox]))
+        layout.addLayout(layout_horizontal([lbl, self.auto_exp_checkbox], align=True))
+
+        # Resolution
+        layout.addWidget(QLabel("Resolution (w x h) [Alt+R]"))
+
+        self.res_input = QLineEdit()
+        self.res_input.setToolTip("Set the resolution (width x height)")
+        self.res_input.returnPressed.connect(self.res_input.clearFocus)
+
+        self.res_reset_button = QPushButton("default")
+        self.res_reset_button.clicked.connect(self.reset_resolution)
+
+        layout.addLayout(
+            layout_horizontal(
+                [
+                    self.res_input,
+                    self.res_reset_button,
+                ],
+                align=True,
+            )
+        )
+        self.reset_resolution()
+
+        self.res_sc = QShortcut(QKeySequence("Alt+R"), self)
+        self.res_sc.activated.connect(self.res_input.setFocus)
+
+        # Framerate
+        layout.addWidget(QLabel("Framerate (fps) [Alt+F]"))
+
+        self.fps_input = QLineEdit()
+        self.fps_input.setToolTip(
+            "Set the framerate for video\n" "recordings in frames per second."
+        )
+        self.fps_input.returnPressed.connect(self.fps_input.clearFocus)
+
+        self.fps_reset_button = QPushButton("default")
+        self.fps_reset_button.clicked.connect(self.reset_framerate)
+
+        layout.addLayout(
+            layout_horizontal(
+                [
+                    self.fps_input,
+                    self.fps_reset_button,
+                ],
+                align=True,
+            )
+        )
+        self.reset_framerate()
+
+        self.res_sc = QShortcut(QKeySequence("Alt+F"), self)
+        self.res_sc.activated.connect(self.fps_input.setFocus)
+
+        # command window
+        self.cmd_window_button = QPushButton("Command window [C]")
+        self.cmd_window_button.clicked.connect(self.open_cmd_window)
+        self.cmd_window_button.setToolTip("Open a command window")
+        self.cmd_window_button.setShortcut("C")
+        layout.addWidget(self.cmd_window_button)
 
         layout_hline(layout)
 
-        # file management
-        self.path_button = QPushButton("Set Recording Path")
+        # File path
+        self.path_label = QLabel("File path [Alt+P]:")
+        layout.addWidget(self.path_label)
+
+        self.path_button = QPushButton("Browse")
         self.path_button.clicked.connect(self.set_path)
         self.path_button.acceptDrops()
-        self.path_button.setToolTip(
-            "Select the path where images and videos\n" "will be stored."
+
+        layout.addLayout(
+            layout_horizontal([self.path_label, self.path_button], align=True)
         )
-        layout.addWidget(self.path_button)
-        layout.addWidget(QLabel("File name:"))
+
+        self.path_input = QLineEdit()
+        self.path_input.setText(self.config.get("default_directory"))
+        self.path_input.setToolTip(
+            "Enter the path to your working directory. Files will be saved here."
+        )
+        self.path_input.returnPressed.connect(self.path_input.clearFocus)
+        layout.addWidget(self.path_input)
+
+        self.path_sc = QShortcut(QKeySequence("Alt+P"), self)
+        self.path_sc.activated.connect(self.path_input.setFocus)
+
+        # File name date prefix
+        self.date_prefix = False
+        lbl = QLabel("Date prefix [D]:")
+        self.date_prefix_checkbox = QCheckBox()
+        self.date_prefix_checkbox.setChecked(False)
+        self.date_prefix_checkbox.toggled.connect(self.set_date_prefix)
+        self.date_prefix_checkbox.setToolTip(
+            "Prefix all filenames with date and time\n"
+            "yyyy-mm-dd_hh_mm_ss_microseconds_yourfilename.jpeg"
+        )
+        self.date_prefix_checkbox.setShortcut("D")
+        layout.addLayout(
+            layout_horizontal([lbl, self.date_prefix_checkbox], align=True)
+        )
+
+        # File name label
+        self.fname_label = QLabel("File name [F]:")
+        layout.addWidget(self.fname_label)
+
+        # File name input
         self.fname_input = QLineEdit()
         self.fname_input.setToolTip(
-            "Select a filename. This will be appended\n" "to a time and date stamp."
+            "Select a filename for your photo or video.\n"
+            "The appropriate extension will be appended."
         )
+        self.fname_input.returnPressed.connect(self.fname_input.clearFocus)
         layout.addWidget(self.fname_input)
+
+        # File name shortcut
+        self.fname_sc = QShortcut(QKeySequence("F"), self)
+        self.fname_sc.activated.connect(self.fname_input.setFocus)
 
         layout_hline(layout)
 
         # preview
 
-        self.preview_button = QPushButton("Start Preview")
+        self.preview_button = QPushButton("Start Preview [P]")
         self.preview_button.clicked.connect(self.preview_cam)
         self.is_preview = False
         self.preview_button.setStyleSheet(f"background-color:{self.col_green}")
         self.preview_button.setToolTip(
-            "Start / Stop the video preview. The preview\n"
-            "is directly managed by the RPi and is sent\n"
-            "directly to your GPU. You might not see this\n"
-            "program anymore, which could be an issue."
+            "Start / Stop the camera preview. The preview\n"
+            "is directly drawn onto the display, bypassing\n"
+            "the window manager. If it covers this program,\n"
+            "you can change preview size and position in the\n"
+            "settings."
         )
+        self.preview_button.setShortcut("P")
         layout.addWidget(self.preview_button)
 
         layout_hline(layout)
 
-        # video recording
+        # video recording time
 
-        layout.addWidget(QLabel("Recording Time (s):"))
+        layout.addWidget(QLabel("Recording Time in seconds [T]:"))
         self.rec_time = QLineEdit()
         self.rec_time.setValidator(QDoubleValidator(bottom=0))
         self.rec_time.setAlignment(Qt.AlignRight)
@@ -141,30 +279,42 @@ class MainWindowControls(QMainWindow):
             "Video recording time in seconds. If set\n"
             "to 0, will record until button is pressed again."
         )
+        self.rec_time.returnPressed.connect(self.rec_time.clearFocus)
         layout.addWidget(self.rec_time)
-        self.rec_button = QPushButton("Start Recording")
+        self.rec_time_sc = QShortcut(QKeySequence("T"), self)
+        self.rec_time_sc.activated.connect(lambda: self.rec_time.setFocus())
+
+        # video recording
+
+        self.rec_button = QPushButton("Start Recording [R]")
         self.rec_button.clicked.connect(self.record_video)
         self.rec_button.setStyleSheet(f"background-color:{self.col_green}")
         self.rec_button.setToolTip(
             "Record a video. Click to start and stop\n" "or set a timer (see above)."
         )
+        self.rec_button.setShortcut("R")
         self.is_recording = False
         layout.addWidget(self.rec_button)
 
         layout_hline(layout)
 
         # image recording
-        self.capture_button = QPushButton("Capture Image")
+        self.capture_button = QPushButton("Capture Image [Space]")
         self.capture_button.setShortcut("Space")
         self.capture_button.clicked.connect(self.capture_image)
         self.capture_button.setToolTip(
-            "Capture an image. Can currently only\n" "be done if video is not recorded."
+            "Capture an image. Can only\n" "be done when video is not recording."
         )
+        self.capture_button.setShortcut("Space")
         layout.addWidget(self.capture_button)
 
         # open command line interface
-        cli = CommandLineScope(parent=self, top=top + height + 50, cam=self.cam)
-        cli.show()
+        if self.config.get("open_cmd_startup"):
+            self.open_cmd_window()
+
+        # open preview
+        if self.config.get("open_preview_startup"):
+            self.preview_cam()
 
     # SETUP #
 
@@ -174,15 +324,43 @@ class MainWindowControls(QMainWindow):
         self.bright_slider.setMinimum(0)
         self.bright_slider.setMaximum(100)
         self.bright_slider.setValue(50)
-        self.bright_slider.valueChanged.connect(lambda x: self.brightness_changed(x))
+        self.bright_slider.valueChanged.connect(self.brightness_changed)
 
         # contrast slider
         self.contr_slider.setMinimum(-100)
         self.contr_slider.setMaximum(100)
         self.contr_slider.setValue(0)
-        self.contr_slider.valueChanged.connect(lambda x: self.contrast_changed(x))
+        self.contr_slider.valueChanged.connect(self.contrast_changed)
 
     # FUNCTIONS #
+
+    def open_settings(self):
+        config_dialog = ConfigDialog(self.config, self, cols=1)
+        config_dialog.setWindowTitle("Settings")
+        config_dialog.accepted.connect(lambda: self.update_config(config_dialog.config))
+        config_dialog.exec()
+
+    def update_config(self, update):
+        self.config.set_many(update.as_dict())
+        self.config.save()
+
+    def open_cmd_window(self):  # , top, height):
+        cli = CommandLineScope(
+            parent=self, top=self.top + self.height + 50, cam=self.cam
+        )
+        cli.show()
+
+    def set_increment(self):
+        if self.increment == True:
+            self.increment = False
+        else:
+            self.increment = True
+
+    def set_date_prefix(self):
+        if self.date_prefix == True:
+            self.date_prefix = False
+        else:
+            self.date_prefix = True
 
     def auto_exposure(self):
         """Turns automatic exposure of the camera on and off."""
@@ -196,18 +374,17 @@ class MainWindowControls(QMainWindow):
         self.cam.brightness = val
 
     def capture_image(self):
-        """Capture an image."""
         fmt = self.scope.image_format
-        fname_inp = self.fname_input.text()
-        if fname_inp != "":
-            fname_inp = f"_{fname_inp}"  # add underscore
-        fname = Path.joinpath(
-            self.scope.home_folder,
-            f"{str(datetime.now())}{fname_inp}.{fmt}".replace(" ", "_"),
-        )
-        self.cam.capture(
-            str(fname), format=fmt
-        )  # specifying the format double checks that it is possible
+        if self.fname_ok() and self.path_ok():
+            fname = self.make_filename_with_path() + "." + str(fmt)
+            if not os.path.isfile(fname):
+                self.set_resolution()
+                self.cam.capture(
+                    str(fname), format=fmt
+                )  # specifying the format double checks that it is possible
+                print("Image captured: " + str(fname))
+            else:
+                self.error_dialog.showMessage("Error: " + fname + "  already exists")
 
     def contrast_changed(self, val):
         """Change brightness to value"""
@@ -216,40 +393,54 @@ class MainWindowControls(QMainWindow):
     def preview_cam(self):
         """Preview camera."""
         if not self.is_preview:  # not preview
-            self.preview_button.setText("Stop Preview")
+            self.set_resolution()
+            self.set_framerate()
+            self.preview_button.setText("Stop Preview [P]")
             self.preview_button.setStyleSheet(f"background-color:{self.col_red}")
-            self.cam.start_preview()
+            (w_camera, h_camera) = self.cam.resolution
+            aspect_ratio = w_camera / h_camera
+            x = int(self.config.get("preview_x"))
+            y = int(self.config.get("preview_y"))
+            h = int(self.config.get("preview_h"))
+            w = int(h * aspect_ratio)
+            self.cam.start_preview(fullscreen=False, window=(x, y, w, h))
             self.is_preview = True
         else:
-            self.preview_button.setText("Start Preview")
+            self.preview_button.setText("Start Preview [P]")
             self.preview_button.setStyleSheet(f"background-color:{self.col_green}")
             self.cam.stop_preview()
             self.is_preview = False
+        # Anytime text is changed, the shortcut is cleared. So specify it again.
+        self.preview_button.setShortcut("P")
 
     def record_video(self):
         """Start and stop recording."""
         if not self.is_recording:  # not recording
-            self.rec_button.setText("Stop Recording")
-            self.rec_button.setStyleSheet(f"background-color:{self.col_red}")
-            self.capture_button.setDisabled(True)
+            if self.fname_ok() and self.path_ok:
+                fmt = self.scope.video_format
+                fname = self.make_filename_with_path() + "." + str(fmt)
+                if not os.path.isfile(fname):
+                    self.set_resolution()
+                    self.set_framerate()
+                    self.rec_button.setText("Stop Recording [R]")
+                    self.rec_button.setStyleSheet(f"background-color:{self.col_red}")
+                    self.capture_button.setDisabled(True)
 
-            fmt = self.scope.video_format
-            fname_inp = self.fname_input.text()
-            if fname_inp != "":
-                fname_inp = f"_{fname_inp}"  # add underscore
-            fname = Path.joinpath(
-                self.scope.home_folder,
-                f"{str(datetime.now())}{fname_inp}.{fmt}".replace(" ", "_"),
-            )
-            self.cam.start_recording(str(fname), format=fmt)
+                    self.cam.start_recording(fname, format=fmt)
 
-            if self.rec_time.text().replace(" ", "") != "":  # make sure not empty
-                if float(self.rec_time.text()) > 0:
-                    self.rec_timer.start()
+                    if (
+                        self.rec_time.text().replace(" ", "") != ""
+                    ):  # make sure not empty
+                        if float(self.rec_time.text()) > 0:
+                            self.rec_timer.start()
 
-            self.is_recording = True
+                    self.is_recording = True
+                else:
+                    self.error_dialog.showMessage(
+                        "Error: " + fname + "  already exists"
+                    )
         else:
-            self.rec_button.setText("Start Recording")
+            self.rec_button.setText("Start Recording [R]")
             self.rec_button.setStyleSheet(f"background-color:{self.col_green}")
             self.capture_button.setEnabled(True)
 
@@ -258,6 +449,42 @@ class MainWindowControls(QMainWindow):
             self.rec_timer.stop()
             self.rec_time_elapsed = 0.0  # reset elapsed time
             self.is_recording = False
+        # Anytime text is changed, the shortcut is cleared. So specify it again.
+        self.rec_button.setShortcut("R")
+
+    def make_filename_with_path(self):
+        fname_inp = self.fname_input.text()
+        if self.date_prefix == True:
+            prefix = str(datetime.now())
+            fname_inp = prefix + "_" + fname_inp
+        fname_inp = fname_inp.replace(".", "_")
+        fname_inp = fname_inp.replace(":", "_")
+        fname_inp = fname_inp.replace(" ", "_")
+        path = Path(self.path_input.text())
+        fname_inp = Path.joinpath(path, fname_inp)
+        return str(fname_inp)
+
+    def fname_ok(self):
+        # check if the filename is not empty
+        fname = self.fname_input.text()
+        if len(fname) == 0 and self.date_prefix == False:
+            self.error_dialog.showMessage(
+                "Error: File name can't be empty if date prefix \
+                is unchecked."
+            )
+            return False
+        else:
+            return True
+
+    def path_ok(self):
+        dir = self.path_input.text()
+        if not os.path.isdir(dir):
+            self.error_dialog.showMessage(
+                "Error: The directory " + dir + " does not exist"
+            )
+            return False
+        else:
+            return True
 
     def recording_timer_check(self):
         """Check and stop the recording if elapsed time larger than total time."""
@@ -273,9 +500,41 @@ class MainWindowControls(QMainWindow):
 
     def set_path(self):
         """Set the recording path via QFileDialogue."""
-        path = QFileDialog.getExistingDirectory(self, "Select Directory", "~")
+        path = QFileDialog.getExistingDirectory(
+            self, "Select Directory", self.path_input.text()
+        )
         if path != "":
-            self.scope.home_folder = Path(path)
+            self.path_input.setText(str(path))
+
+    def reset_resolution(self):
+        self.res_input.setText(self.config.get("default_resolution"))
+
+    def set_resolution(self):
+        new_res = self.res_input.text()
+        if self.cam.resolution != new_res:
+            previous_resolution = self.cam.resolution
+            try:
+                self.cam.resolution = new_res
+                print(f"resolution changed to {new_res}.")
+            except:
+                print(f"resolution {new_res} not supported.")
+                self.res_input.setText(str(previous_resolution))
+                self.cam.resolution = previous_resolution
+
+    def reset_framerate(self):
+        self.fps_input.setText(self.config.get("default_framerate"))
+
+    def set_framerate(self):
+        new_fps = float(self.fps_input.text())
+        if float(self.cam.framerate) != new_fps:
+            previous_framerate = self.cam.framerate
+            try:
+                self.cam.framerate = new_fps
+                print(f"framerate changed to {new_fps} fps.")
+            except:
+                print(f"framerate {new_fps} fps not supported.")
+                self.fps_input.setText(str(previous_framerate))
+                self.cam.framerate = previous_framerate
 
 
 class CommandLineScope(QMainWindow):
@@ -368,7 +627,7 @@ def layout_hline(layout):
     layout.addWidget(line)
 
 
-def layout_horizontal(items):
+def layout_horizontal(items, align):
     """Add items to QHBoxLayout and return the layout.
 
     :param items: List of all Widgets
@@ -378,10 +637,16 @@ def layout_horizontal(items):
     :rtype: Qt.QHBoxLayout
     """
     layout = QHBoxLayout()
-    layout.addStretch()
-    for item in items:
-        layout.addWidget(item)
+    if align == True:
+        for i in range(len(items) - 1):
+            layout.addWidget(items[i])
+            layout.addStretch()
+        layout.addWidget(items[-1])
+    else:
         layout.addStretch()
+        for item in items:
+            layout.addWidget(item)
+            layout.addStretch()
     return layout
 
 
