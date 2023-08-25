@@ -15,7 +15,7 @@ If you are not sure if your camera is enabled,
 try and take an image according to the getting started guide
 [here](https://static.raspberrypi.org/files/product-guides/Raspberry_Pi_High_Quality_Camera_Getting_Started.pdf).
 
-### Installing Linux Pre-Requisites
+### Installing Pre-Requisites
 
 First make sure you have an updated operating system
 by running:
@@ -25,11 +25,11 @@ sudo apt update
 sudo apt upgrade
 ```
 
-Next install the required packages
-to run PyQt5 as following:
+Next install the required packages:
 
 ```bash
 sudo apt install python3-pyqt5
+pip install pyqtconfig
 ```
 
 You should be all set for installations!
