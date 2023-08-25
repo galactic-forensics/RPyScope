@@ -64,7 +64,7 @@ class MainWindowControls(QMainWindow):
             "preview_y": "40",
             "preview_h": "900",
             "default_resolution": "1920x1080",
-            "default_fps": "30",
+            "default_framerate": "30",
         }
 
         # note: the filename is relative to your location,
@@ -142,7 +142,7 @@ class MainWindowControls(QMainWindow):
         self.res_input.returnPressed.connect(self.res_input.clearFocus)
 
         self.res_reset_button = QPushButton("default")
-        self.res_reset_button.clicked.connect(self.resolution_reset)
+        self.res_reset_button.clicked.connect(self.reset_resolution)
 
         layout.addLayout(
             layout_horizontal(
@@ -153,10 +153,36 @@ class MainWindowControls(QMainWindow):
                 align=True,
             )
         )
-        self.resolution_reset()
+        self.reset_resolution()
 
         self.res_sc = QShortcut(QKeySequence("Alt+R"), self)
         self.res_sc.activated.connect(self.res_input.setFocus)
+
+        # Framerate
+        layout.addWidget(QLabel("Framerate (fps) [Alt+F]"))
+
+        self.fps_input = QLineEdit()
+        self.fps_input.setToolTip(
+            "Set the framerate for video\n" "recordings in frames per second."
+        )
+        self.fps_input.returnPressed.connect(self.fps_input.clearFocus)
+
+        self.fps_reset_button = QPushButton("default")
+        self.fps_reset_button.clicked.connect(self.reset_framerate)
+
+        layout.addLayout(
+            layout_horizontal(
+                [
+                    self.fps_input,
+                    self.fps_reset_button,
+                ],
+                align=True,
+            )
+        )
+        self.reset_framerate()
+
+        self.res_sc = QShortcut(QKeySequence("Alt+F"), self)
+        self.res_sc.activated.connect(self.fps_input.setFocus)
 
         # command window
         self.cmd_window_button = QPushButton("Command window [C]")
@@ -368,6 +394,7 @@ class MainWindowControls(QMainWindow):
         """Preview camera."""
         if not self.is_preview:  # not preview
             self.set_resolution()
+            self.set_framerate()
             self.preview_button.setText("Stop Preview [P]")
             self.preview_button.setStyleSheet(f"background-color:{self.col_red}")
             (w_camera, h_camera) = self.cam.resolution
@@ -394,7 +421,7 @@ class MainWindowControls(QMainWindow):
                 fname = self.make_filename_with_path() + "." + str(fmt)
                 if not os.path.isfile(fname):
                     self.set_resolution()
-                    self.set_fps()
+                    self.set_framerate()
                     self.rec_button.setText("Stop Recording [R]")
                     self.rec_button.setStyleSheet(f"background-color:{self.col_red}")
                     self.capture_button.setDisabled(True)
@@ -479,20 +506,35 @@ class MainWindowControls(QMainWindow):
         if path != "":
             self.path_input.setText(str(path))
 
-    def resolution_reset(self):
+    def reset_resolution(self):
         self.res_input.setText(self.config.get("default_resolution"))
 
     def set_resolution(self):
-        if self.cam.resolution != self.res_input.text():
+        new_res = self.res_input.text()
+        if self.cam.resolution != new_res:
             previous_resolution = self.cam.resolution
             try:
-                self.cam.resolution = self.res_input.text()
+                self.cam.resolution = new_res
+                print(f"resolution changed to {new_res}.")
             except:
+                print(f"resolution {new_res} not supported.")
                 self.res_input.setText(str(previous_resolution))
                 self.cam.resolution = previous_resolution
 
-    def set_fps(self):
-        pass
+    def reset_framerate(self):
+        self.fps_input.setText(self.config.get("default_framerate"))
+
+    def set_framerate(self):
+        new_fps = float(self.fps_input.text())
+        if float(self.cam.framerate) != new_fps:
+            previous_framerate = self.cam.framerate
+            try:
+                self.cam.framerate = new_fps
+                print(f"framerate changed to {new_fps} fps.")
+            except:
+                print(f"framerate {new_fps} fps not supported.")
+                self.fps_input.setText(str(previous_framerate))
+                self.cam.framerate = previous_framerate
 
 
 class CommandLineScope(QMainWindow):
