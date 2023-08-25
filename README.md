@@ -115,32 +115,31 @@ and follows the description in
 in the PiCamera Manual.
 You can still adjust brightness and contrast.
 
+### Resolution and framerate
+
+You can set the resolution as 'width x height' in pixels, and the framerate in frames per second. For maximum supported resolutions and framerates, see [Sensor Modes](https://picamera.readthedocs.io/en/release-1.13/fov.html#sensor-modes) in the picamera documentation. The new resolution will be applied as soon as you either start the preview, start a recording or capture an image. The new framerate will be applied as soon as you either start the preview or record a video.
+
 ### Recording to files
 
-The recording path can be set by
-clicking the button
-`Set Recording Path`.
+The recording path can be typed directly under
+`File path`, or set by clicking on 'Browse'.
 This will specify which folder new files get saved to.
-Putting something into the file name input box
+Putting something into the 'File name' input box
 will furthermore choose this filename.
-*Note* that currently,
-a full timestamp will be attached to the beginning of
-each file name.
+A full timestamp can be attached to the beginning of
+each file name by checking 'Date prefix'.
 
 By default,
-the path that you will record to is the home path,
-e.g., `/home/pi`.
+the path that you will record to is your Desktop,
+e.g., `/home/pi/Desktop`.
 
 ### Preview
 
 The raspberry pi camera preview can be started or stopped
 with the `Start Preview` / `Stop Preview` button.
-This preview directly streams to the GPU,
-therefore you are advised to keep the program on the very left
-or very right of the screen.
-If you don't move your mouse away from the button,
-you can always click it in case you cannot see it anymore
-after the preview starts.
+This preview directly streams to the GPU and bypasses your window manager,
+meaning that you can't move or resize it with the mouse.
+See the [Settings](#settings) sections for preview positioning.
 
 ### Recording Video
 
@@ -173,6 +172,15 @@ Other formats are currently not supported,
 but will be in the future.
 You can also easily change the default
 by hacking around in the code :)
+
+### <a name="settings"></a> Settings
+The settings allow you to configure your RPyScope app and are saved in '~/.config/rpyscope-config.json'.
+'open_preview_startup' lets you choose if the preview should be startet when you open the app.
+Checking 'open_cmd_startup' opens the command window when you open the app.
+'preview_x', 'preview_y' and 'preview_h' set the 'x' and 'y' position of the previews top left corner and its height respectively.
+The preview width is chosen to preserve the aspect ratio determined by the resolution.
+'default_directory', 'default_resolution' and 'default_framerate' are the values of you want to have for
+'File path', 'Resolution' and 'Framerate' when you start the application.
 
 ### Command line interface (CLI)
 
