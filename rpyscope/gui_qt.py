@@ -21,6 +21,7 @@ from PyQt5.QtWidgets import (
     QFrame,
     QShortcut,
     QErrorMessage,
+    QComboBox,
 )
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QFont, QDoubleValidator, QKeySequence
@@ -55,6 +56,10 @@ class MainWindowControls(QMainWindow):
         self.error_dialog = QErrorMessage()
         self.error_dialog.setGeometry(5, 80, 300, 200)
 
+        # Load Microscope interactions
+        self.scope = Microscope()
+        self.cam = self.scope.cam
+
         # Load settings
         default_settings = {
             "open_preview_startup": True,
@@ -65,18 +70,58 @@ class MainWindowControls(QMainWindow):
             "preview_h": "900",
             "default_resolution": "1920x1080",
             "default_framerate": "30",
+            "image_format": "jpeg",
+            "video_format": "h264",
+            "rotation": "0",
+            "vflip": False,
+            "hflip": False,
         }
 
-        # note: the filename is relative to your location,
-        # where you are executing gui_qt.py from
+        default_settings_metadata = {
+            "image_format": {
+                "preferred_handler": QComboBox,
+                "preferred_map_dict": {
+                    "jpeg": "jpeg",
+                    "png": "png",
+                    "gif": "gif",
+                    "bmp": "bmp",
+                    "yuv": "yuv",
+                    "rgb": "rgb",
+                    "rgba": "rgba",
+                    "bgr": "bgr",
+                    "bgra": "bgra",
+                },
+            },
+            "video_format": {
+                "preferred_handler": QComboBox,
+                "preferred_map_dict": {
+                    "h264": "h264",
+                    "mjpeg": "mjpeg",
+                    "yuv": "yuv",
+                    "rgb": "rgb",
+                    "rgba": "rgba",
+                    "bgr": "bgr",
+                    "bgra": "bgra",
+                },
+            },
+            "rotation": {
+                "preferred_handler": QComboBox,
+                "preferred_map_dict": {
+                    "0": 0,
+                    "90": 90,
+                    "180": 180,
+                    "270": 270,
+                },
+            },
+        }
+
         self.config = ConfigManager(
             default_settings,
             filename=os.path.expanduser("~/.config/rpyscope-config.json"),
         )
-
-        # Load Microscope interactions
-        self.scope = Microscope()
-        self.cam = self.scope.cam
+        self.config.set_many_metadata(default_settings_metadata)
+        # apply rotations and flips
+        self.update_config(self.config)
 
         # colors
         self.col_green = "#DBFFD4"
@@ -343,6 +388,9 @@ class MainWindowControls(QMainWindow):
 
     def update_config(self, update):
         self.config.set_many(update.as_dict())
+        self.cam.rotation = update.get("rotation")
+        self.cam.vflip = update.get("vflip")
+        self.cam.vflip = update.get("hflip")
         self.config.save()
 
     def open_cmd_window(self):  # , top, height):
@@ -375,7 +423,7 @@ class MainWindowControls(QMainWindow):
         self.cam.brightness = val
 
     def capture_image(self):
-        fmt = self.scope.image_format
+        fmt = self.config.get("image_format")
         if self.fname_ok() and self.path_ok():
             fname = self.make_filename_with_path() + "." + str(fmt)
             if not os.path.isfile(fname):
@@ -418,7 +466,7 @@ class MainWindowControls(QMainWindow):
         """Start and stop recording."""
         if not self.is_recording:  # not recording
             if self.fname_ok() and self.path_ok:
-                fmt = self.scope.video_format
+                fmt = self.config.get("video_format")
                 fname = self.make_filename_with_path() + "." + str(fmt)
                 if not os.path.isfile(fname):
                     self.set_resolution()
