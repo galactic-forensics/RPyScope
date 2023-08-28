@@ -436,7 +436,7 @@ class MainWindowControls(QMainWindow):
         self.config.set_many(update.as_dict())
         self.cam.rotation = update.get("rotation")
         self.cam.vflip = update.get("vflip")
-        self.cam.vflip = update.get("hflip")
+        self.cam.hflip = update.get("hflip")
         self.config.save()
 
     def open_cmd_window(self):  # , top, height):
