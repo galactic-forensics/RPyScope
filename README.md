@@ -222,6 +222,11 @@ Also: you might be able to do real damage with the CLI to all your data,
 because you have the full power of python at your fingertips.
 Enjoy!
 
+### Shortcuts
+Shortcuts for each action are indicated in square brackets in the app(for example `[F]` to set the file name).
+Shortcuts are inactivated when you input a text or a number. Press enter to end input and activate shortcuts again.
+Press `Ctrl+Q` to close the app.
+
 ## Simple camera
 If you only need to take pictures and don't want to install PyQt, you can just run the script `simple_capture.py` in the folder `simple_capture`. In the dialog window type the file name, press save and a picture gets captured and saved as you specified. If your filename ends with a digit, the next filename is set to be the previeus filename with the digit incremented by one.
 

@@ -104,26 +104,43 @@ class MainWindowControls(QMainWindow):
         self.settings_button.setShortcut("S")
         layout.addWidget(self.settings_button)
 
-        # Brightness & Contrast Labels
-        blabel = QLabel("Brightness")
-        font_center_bold(blabel)
-        clabel = QLabel("Contrast")
-        font_center_bold(clabel)
-        layout.addLayout(layout_horizontal([blabel, clabel], align=False))
+        # Brightness
+        layout.addWidget(QLabel("Brightness"))
 
-        # Sliders
-        self.bright_slider = QSlider(Qt.Vertical)
-        self.contr_slider = QSlider(Qt.Vertical)
-        self.setup_sliders()
-        layout.addLayout(
-            layout_horizontal([self.bright_slider, self.contr_slider], align=False)
-        )
-        self.reset_bright_contr_button = QPushButton("Reset B/C")
-        self.reset_bright_contr_button.clicked.connect(self.reset_bright_contr)
-        self.reset_bright_contr_button.setToolTip("Reset brightness and contrast.")
-        layout.addWidget(self.reset_bright_contr_button)
+        self.bright_slider = QSlider(Qt.Horizontal)
+        self.bright_slider.setMinimum(0)
+        self.bright_slider.setMaximum(100)
+        self.bright_slider.setValue(50)
+        self.bright_slider.valueChanged.connect(self.brightness_changed)
 
-        # automatic exposure
+        self.bright_reset_button = QPushButton("default")
+        self.bright_reset_button.clicked.connect(self.reset_bright)
+
+        h_layout = QHBoxLayout()
+        h_layout.addWidget(self.bright_slider)
+        h_layout.addWidget(self.bright_reset_button)
+
+        layout.addLayout(h_layout)
+
+        # Contrast
+        layout.addWidget(QLabel("Contrast"))
+
+        self.contr_slider = QSlider(Qt.Horizontal)
+        self.contr_slider.setMinimum(-100)
+        self.contr_slider.setMaximum(100)
+        self.contr_slider.setValue(0)
+        self.contr_slider.valueChanged.connect(self.contrast_changed)
+
+        self.contr_reset_button = QPushButton("default")
+        self.contr_reset_button.clicked.connect(self.reset_contr)
+
+        h_layout = QHBoxLayout()
+        h_layout.addWidget(self.contr_slider)
+        h_layout.addWidget(self.contr_reset_button)
+
+        layout.addLayout(h_layout)
+
+        # Automatic exposure
         lbl = QLabel("Auto exposure:")
         self.auto_exp_checkbox = QCheckBox()
         self.auto_exp_checkbox.setChecked(True)
@@ -316,22 +333,6 @@ class MainWindowControls(QMainWindow):
         if self.config.get("open_preview_startup"):
             self.preview_cam()
 
-    # SETUP #
-
-    def setup_sliders(self):
-        """Setup for the sliders and all connects, etc."""
-        # brightness slider
-        self.bright_slider.setMinimum(0)
-        self.bright_slider.setMaximum(100)
-        self.bright_slider.setValue(50)
-        self.bright_slider.valueChanged.connect(self.brightness_changed)
-
-        # contrast slider
-        self.contr_slider.setMinimum(-100)
-        self.contr_slider.setMaximum(100)
-        self.contr_slider.setValue(0)
-        self.contr_slider.valueChanged.connect(self.contrast_changed)
-
     # FUNCTIONS #
 
     def open_settings(self):
@@ -493,9 +494,10 @@ class MainWindowControls(QMainWindow):
             # click record video to stop it, since it is started right now...
             self.record_video()
 
-    def reset_bright_contr(self):
-        """Reset brightness and contrast slider."""
+    def reset_bright(self):
         self.bright_slider.setValue(50)
+
+    def reset_contr(self):
         self.contr_slider.setValue(0)
 
     def set_path(self):
@@ -603,20 +605,6 @@ class CommandLineScope(QMainWindow):
 
 
 #  HELPER FUNCTIONS #
-
-
-def font_center_bold(lbl):
-    """Sets a QLabel Centered and bold.
-
-    :param lbl: Label
-    :type lbl: QLabel
-
-    :return: None
-    """
-    font = QFont()
-    font.setBold(True)
-    lbl.setAlignment(Qt.AlignCenter)
-    lbl.setFont(font)
 
 
 def layout_hline(layout):
