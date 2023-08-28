@@ -99,7 +99,7 @@ class MainWindowControls(QMainWindow):
         layout.addWidget(self.settings_button)
 
         # Brightness
-        layout.addWidget(QLabel("Brightness"))
+        layout.addWidget(QLabel("Brightness [B]"))
 
         self.bright_slider = QSlider(Qt.Horizontal)
         self.bright_slider.setMinimum(0)
@@ -115,10 +115,13 @@ class MainWindowControls(QMainWindow):
 
         layout.addLayout(h_layout)
 
+        self.bright_sc = QShortcut(QKeySequence("B"), self)
+        self.bright_sc.activated.connect(self.bright_slider.setFocus)
+
         self.config.add_handler("brightness", self.bright_slider)
 
         # Contrast
-        layout.addWidget(QLabel("Contrast"))
+        layout.addWidget(QLabel("Contrast [C]"))
 
         self.contr_slider = QSlider(Qt.Horizontal)
         self.contr_slider.setMinimum(-100)
@@ -133,6 +136,9 @@ class MainWindowControls(QMainWindow):
         h_layout.addWidget(self.contr_reset_button)
 
         layout.addLayout(h_layout)
+
+        self.contr_sc = QShortcut(QKeySequence("C"), self)
+        self.contr_sc.activated.connect(self.contr_slider.setFocus)
 
         self.config.add_handler("contrast", self.contr_slider)
 
@@ -203,10 +209,10 @@ class MainWindowControls(QMainWindow):
         self.config.add_handler("framerate", self.fps_input)
 
         # command window
-        self.cmd_window_button = QPushButton("Command window [C]")
+        self.cmd_window_button = QPushButton("Command window [Alt+C]")
         self.cmd_window_button.clicked.connect(self.open_cmd_window)
         self.cmd_window_button.setToolTip("Open a command window")
-        self.cmd_window_button.setShortcut("C")
+        self.cmd_window_button.setShortcut("Alt+C")
         layout.addWidget(self.cmd_window_button)
 
         layout_hline(layout)
@@ -646,6 +652,10 @@ class CommandLineScope(QMainWindow):
 
         self.parent = parent
         self.cam = cam
+
+        # Exit shortcut
+        self.quit_sc = QShortcut(QKeySequence("Ctrl+W"), self)
+        self.quit_sc.activated.connect(self.close)
 
         # CLI _history
         self.history = []
