@@ -21,6 +21,7 @@ from PyQt5.QtWidgets import (
     QFrame,
     QShortcut,
     QErrorMessage,
+    QComboBox,
 )
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QFont, QDoubleValidator, QKeySequence
@@ -36,7 +37,16 @@ class MainWindowControls(QMainWindow):
     def __init__(self):
         # info variables
         self.version = "0.0.1"
-        self.author = "Reto Trappitsch"
+        self.author = "Reto Trappitsch and Louis Linder"
+        self.link = "https://github.com/galactic-forensics/RPyScope"
+
+        print(
+            f"Welcome to RPyScope!\n"
+            f"Version: {self.version}\n"
+            f"Authors: {self.author}\n"
+            f"License: GPLv3\n"
+            f"See {self.link} for more information."
+        )
 
         # init and sizing
         super().__init__()
@@ -49,34 +59,18 @@ class MainWindowControls(QMainWindow):
 
         # Quit shortcut
         self.quit_sc = QShortcut(QKeySequence("Ctrl+Q"), self)
-        self.quit_sc.activated.connect(sys.exit)
+        self.quit_sc.activated.connect(self.close)
 
         # Error messages
         self.error_dialog = QErrorMessage()
         self.error_dialog.setGeometry(5, 80, 300, 200)
 
-        # Load settings
-        default_settings = {
-            "open_preview_startup": True,
-            "open_cmd_startup": False,
-            "default_directory": os.path.expanduser("~/Desktop"),
-            "preview_x": "310",
-            "preview_y": "40",
-            "preview_h": "900",
-            "default_resolution": "1920x1080",
-            "default_framerate": "30",
-        }
-
-        # note: the filename is relative to your location,
-        # where you are executing gui_qt.py from
-        self.config = ConfigManager(
-            default_settings,
-            filename=os.path.expanduser("~/.config/rpyscope-config.json"),
-        )
-
         # Load Microscope interactions
         self.scope = Microscope()
         self.cam = self.scope.cam
+
+        # Load settings
+        self.load_settings()
 
         # colors
         self.col_green = "#DBFFD4"
@@ -105,12 +99,11 @@ class MainWindowControls(QMainWindow):
         layout.addWidget(self.settings_button)
 
         # Brightness
-        layout.addWidget(QLabel("Brightness"))
+        layout.addWidget(QLabel("Brightness [B]"))
 
         self.bright_slider = QSlider(Qt.Horizontal)
         self.bright_slider.setMinimum(0)
         self.bright_slider.setMaximum(100)
-        self.bright_slider.setValue(50)
         self.bright_slider.valueChanged.connect(self.brightness_changed)
 
         self.bright_reset_button = QPushButton("default")
@@ -122,13 +115,17 @@ class MainWindowControls(QMainWindow):
 
         layout.addLayout(h_layout)
 
+        self.bright_sc = QShortcut(QKeySequence("B"), self)
+        self.bright_sc.activated.connect(self.bright_slider.setFocus)
+
+        self.config.add_handler("brightness", self.bright_slider)
+
         # Contrast
-        layout.addWidget(QLabel("Contrast"))
+        layout.addWidget(QLabel("Contrast [C]"))
 
         self.contr_slider = QSlider(Qt.Horizontal)
         self.contr_slider.setMinimum(-100)
         self.contr_slider.setMaximum(100)
-        self.contr_slider.setValue(0)
         self.contr_slider.valueChanged.connect(self.contrast_changed)
 
         self.contr_reset_button = QPushButton("default")
@@ -140,16 +137,22 @@ class MainWindowControls(QMainWindow):
 
         layout.addLayout(h_layout)
 
+        self.contr_sc = QShortcut(QKeySequence("C"), self)
+        self.contr_sc.activated.connect(self.contr_slider.setFocus)
+
+        self.config.add_handler("contrast", self.contr_slider)
+
         # Automatic exposure
         lbl = QLabel("Auto exposure:")
         self.auto_exp_checkbox = QCheckBox()
-        self.auto_exp_checkbox.setChecked(True)
         self.auto_exp_checkbox.toggled.connect(self.auto_exposure)
         self.auto_exp_checkbox.setToolTip(
             "Enable or disable automatic exposure.\n"
             "See Section 3.5 in PiCamera documentation."
         )
         layout.addLayout(layout_horizontal([lbl, self.auto_exp_checkbox], align=True))
+
+        self.config.add_handler("auto_exp", self.auto_exp_checkbox)
 
         # Resolution
         layout.addWidget(QLabel("Resolution (w x h) [Alt+R]"))
@@ -174,6 +177,8 @@ class MainWindowControls(QMainWindow):
 
         self.res_sc = QShortcut(QKeySequence("Alt+R"), self)
         self.res_sc.activated.connect(self.res_input.setFocus)
+
+        self.config.add_handler("resolution", self.res_input)
 
         # Framerate
         layout.addWidget(QLabel("Framerate (fps) [Alt+F]"))
@@ -201,11 +206,13 @@ class MainWindowControls(QMainWindow):
         self.res_sc = QShortcut(QKeySequence("Alt+F"), self)
         self.res_sc.activated.connect(self.fps_input.setFocus)
 
+        self.config.add_handler("framerate", self.fps_input)
+
         # command window
-        self.cmd_window_button = QPushButton("Command window [C]")
+        self.cmd_window_button = QPushButton("Command window [Alt+C]")
         self.cmd_window_button.clicked.connect(self.open_cmd_window)
         self.cmd_window_button.setToolTip("Open a command window")
-        self.cmd_window_button.setShortcut("C")
+        self.cmd_window_button.setShortcut("Alt+C")
         layout.addWidget(self.cmd_window_button)
 
         layout_hline(layout)
@@ -216,7 +223,6 @@ class MainWindowControls(QMainWindow):
 
         self.path_button = QPushButton("Browse")
         self.path_button.clicked.connect(self.set_path)
-        self.path_button.acceptDrops()
 
         layout.addLayout(
             layout_horizontal([self.path_label, self.path_button], align=True)
@@ -233,6 +239,8 @@ class MainWindowControls(QMainWindow):
         self.path_sc = QShortcut(QKeySequence("Alt+P"), self)
         self.path_sc.activated.connect(self.path_input.setFocus)
 
+        self.config.add_handler("path", self.path_input)
+
         # File name date prefix
         self.date_prefix = False
         lbl = QLabel("Date prefix [D]:")
@@ -247,6 +255,8 @@ class MainWindowControls(QMainWindow):
         layout.addLayout(
             layout_horizontal([lbl, self.date_prefix_checkbox], align=True)
         )
+
+        self.config.add_handler("date_prefix", self.date_prefix_checkbox)
 
         # File name label
         self.fname_label = QLabel("File name [F]:")
@@ -264,6 +274,8 @@ class MainWindowControls(QMainWindow):
         # File name shortcut
         self.fname_sc = QShortcut(QKeySequence("F"), self)
         self.fname_sc.activated.connect(self.fname_input.setFocus)
+
+        self.config.add_handler("fname", self.fname_input)
 
         layout_hline(layout)
 
@@ -291,7 +303,6 @@ class MainWindowControls(QMainWindow):
         self.rec_time = QLineEdit()
         self.rec_time.setValidator(QDoubleValidator(bottom=0))
         self.rec_time.setAlignment(Qt.AlignRight)
-        self.rec_time.setText("0")
         self.rec_time.setToolTip(
             "Video recording time in seconds. If set\n"
             "to 0, will record until button is pressed again."
@@ -300,6 +311,8 @@ class MainWindowControls(QMainWindow):
         layout.addWidget(self.rec_time)
         self.rec_time_sc = QShortcut(QKeySequence("T"), self)
         self.rec_time_sc.activated.connect(lambda: self.rec_time.setFocus())
+
+        self.config.add_handler("rec_time", self.rec_time)
 
         # video recording
 
@@ -334,6 +347,84 @@ class MainWindowControls(QMainWindow):
             self.preview_cam()
 
     # FUNCTIONS #
+    def load_settings(self):
+        default_settings = {
+            "open_preview_startup": True,
+            "open_cmd_startup": False,
+            "preview_x": "310",
+            "preview_y": "40",
+            "preview_h": "900",
+            "image_format": "jpeg",
+            "video_format": "h264",
+            "rotation": "0",
+            "vflip": False,
+            "hflip": False,
+            # hidden settings
+            "brightness": 50,
+            "contrast": 0,
+            "auto_exp": True,
+            "resolution": "1920x1080",
+            "framerate": "30",
+            "path": os.path.expanduser("~/Desktop"),
+            "date_prefix": False,
+            "fname": "",
+            "rec_time": "0",
+        }
+
+        default_settings_metadata = {
+            "image_format": {
+                "preferred_handler": QComboBox,
+                "preferred_map_dict": {
+                    "jpeg": "jpeg",
+                    "png": "png",
+                    "gif": "gif",
+                    "bmp": "bmp",
+                    "yuv": "yuv",
+                    "rgb": "rgb",
+                    "rgba": "rgba",
+                    "bgr": "bgr",
+                    "bgra": "bgra",
+                },
+            },
+            "video_format": {
+                "preferred_handler": QComboBox,
+                "preferred_map_dict": {
+                    "h264": "h264",
+                    "mjpeg": "mjpeg",
+                    "yuv": "yuv",
+                    "rgb": "rgb",
+                    "rgba": "rgba",
+                    "bgr": "bgr",
+                    "bgra": "bgra",
+                },
+            },
+            "rotation": {
+                "preferred_handler": QComboBox,
+                "preferred_map_dict": {
+                    "0": 0,
+                    "90": 90,
+                    "180": 180,
+                    "270": 270,
+                },
+            },
+            "brightness": {"prefer_hidden": True},
+            "contrast": {"prefer_hidden": True},
+            "auto_exp": {"prefer_hidden": True},
+            "resolution": {"prefer_hidden": True},
+            "framerate": {"prefer_hidden": True},
+            "path": {"prefer_hidden": True},
+            "date_prefix": {"prefer_hidden": True},
+            "fname": {"prefer_hidden": True},
+            "rec_time": {"prefer_hidden": True},
+        }
+
+        self.config = ConfigManager(
+            default_settings,
+            filename=os.path.expanduser("~/.config/rpyscope-config.json"),
+        )
+        self.config.set_many_metadata(default_settings_metadata)
+        # apply rotations and flips
+        self.update_config(self.config)
 
     def open_settings(self):
         config_dialog = ConfigDialog(self.config, self, cols=1)
@@ -343,6 +434,9 @@ class MainWindowControls(QMainWindow):
 
     def update_config(self, update):
         self.config.set_many(update.as_dict())
+        self.cam.rotation = update.get("rotation")
+        self.cam.vflip = update.get("vflip")
+        self.cam.hflip = update.get("hflip")
         self.config.save()
 
     def open_cmd_window(self):  # , top, height):
@@ -375,7 +469,7 @@ class MainWindowControls(QMainWindow):
         self.cam.brightness = val
 
     def capture_image(self):
-        fmt = self.scope.image_format
+        fmt = self.config.get("image_format")
         if self.fname_ok() and self.path_ok():
             fname = self.make_filename_with_path() + "." + str(fmt)
             if not os.path.isfile(fname):
@@ -418,7 +512,7 @@ class MainWindowControls(QMainWindow):
         """Start and stop recording."""
         if not self.is_recording:  # not recording
             if self.fname_ok() and self.path_ok:
-                fmt = self.scope.video_format
+                fmt = self.config.get("video_format")
                 fname = self.make_filename_with_path() + "." + str(fmt)
                 if not os.path.isfile(fname):
                     self.set_resolution()
@@ -495,10 +589,10 @@ class MainWindowControls(QMainWindow):
             self.record_video()
 
     def reset_bright(self):
-        self.bright_slider.setValue(50)
+        self.bright_slider.setValue(self.config._get_default("brightness"))
 
     def reset_contr(self):
-        self.contr_slider.setValue(0)
+        self.contr_slider.setValue(self.config._get_default("contrast"))
 
     def set_path(self):
         """Set the recording path via QFileDialogue."""
@@ -509,22 +603,22 @@ class MainWindowControls(QMainWindow):
             self.path_input.setText(str(path))
 
     def reset_resolution(self):
-        self.res_input.setText(self.config.get("default_resolution"))
+        self.res_input.setText(self.config._get_default("resolution"))
 
     def set_resolution(self):
         new_res = self.res_input.text()
-        if self.cam.resolution != new_res:
+        if str(self.cam.resolution) != new_res:
             previous_resolution = self.cam.resolution
             try:
                 self.cam.resolution = new_res
-                print(f"resolution changed to {new_res}.")
+                print(f"resolution set to {new_res}.")
             except:
                 print(f"resolution {new_res} not supported.")
                 self.res_input.setText(str(previous_resolution))
                 self.cam.resolution = previous_resolution
 
     def reset_framerate(self):
-        self.fps_input.setText(self.config.get("default_framerate"))
+        self.fps_input.setText(self.config._get_default("framerate"))
 
     def set_framerate(self):
         new_fps = float(self.fps_input.text())
@@ -532,11 +626,15 @@ class MainWindowControls(QMainWindow):
             previous_framerate = self.cam.framerate
             try:
                 self.cam.framerate = new_fps
-                print(f"framerate changed to {new_fps} fps.")
+                print(f"framerate set to {new_fps} fps.")
             except:
                 print(f"framerate {new_fps} fps not supported.")
                 self.fps_input.setText(str(previous_framerate))
                 self.cam.framerate = previous_framerate
+
+    def closeEvent(self, event):
+        print("\nHave a nice day :)")
+        self.config.save()
 
 
 class CommandLineScope(QMainWindow):
@@ -554,6 +652,10 @@ class CommandLineScope(QMainWindow):
 
         self.parent = parent
         self.cam = cam
+
+        # Exit shortcut
+        self.quit_sc = QShortcut(QKeySequence("Ctrl+W"), self)
+        self.quit_sc.activated.connect(self.close)
 
         # CLI _history
         self.history = []

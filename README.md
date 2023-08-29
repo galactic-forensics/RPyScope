@@ -179,8 +179,8 @@ The settings allow you to configure your RPyScope app and are saved in `~/.confi
 Checking `open_cmd_startup` opens the command window when you open the app.
 `preview_x`, `preview_y` and `preview_h` set the `x` and `y` position of the previews top left corner and its height respectively.
 The preview width is chosen to preserve the aspect ratio determined by the resolution.
-`default_directory`, `default_resolution` and `default_framerate` are the values of you want to have for
-`File path`, `Resolution` and `Framerate` when you start the application.
+`image_format` and `video_format` allow you to specify output format for image and video files.
+Finally `rotation`, `vflip` and `hflip` can rotate and mirror the image vertically and horizontally.
 
 ### Command line interface (CLI)
 
@@ -225,7 +225,8 @@ Enjoy!
 ### Shortcuts
 Shortcuts for each action are indicated in square brackets in the app(for example `[F]` to set the file name).
 Shortcuts are inactivated when you input a text or a number. Press enter to end input and activate shortcuts again.
-Press `Ctrl+Q` to close the app.
+You can manipulate the sliders for brighness and contrast by pressing their shortcut and then adjusting the position with arrows keys.
+Press `Ctrl+W` to exit the command window and `Ctrl+Q` to close the app.
 
 ## Simple camera
 If you only need to take pictures and don't want to install PyQt, you can just run the script `simple_capture.py` in the folder `simple_capture`. In the dialog window type the file name, press save and a picture gets captured and saved as you specified. If your filename ends with a digit, the next filename is set to be the previeus filename with the digit incremented by one.

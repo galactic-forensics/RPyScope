@@ -5,9 +5,7 @@ setup(
     version="0.0.1",
     packages=["rpyscope", "rpyscope.cameras"],
     url="",
-    license="MIT",
-    author="Reto Trappitsch",
-    author_email="reto@galactic-forensics.space",
+    license="GPLv3",
     description="Microscope package for Raspberry Pi and PiCam HQ",
     install_requires=["pyqtconfig"],
 )
