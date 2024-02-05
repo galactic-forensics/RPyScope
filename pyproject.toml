@@ -16,6 +16,7 @@ license = { text = "MIT" }
 
 [project.scripts]
 rpyscope_demo = "rpyscope.__init__:demo"
+rpyscope_legacy = "rpyscope.__init__:rpihq_legacy"
 
 [build-system]
 requires = ["hatchling"]
