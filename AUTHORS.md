@@ -1,2 +1,0 @@
-Louis Linder
-Reto Trappitsch

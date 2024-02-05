@@ -40,6 +40,24 @@ class SimCam(AbsCamera):
     def contrast(self, value):
         print_return_call("contrast", value)
 
+    @property
+    def framerate(self):
+        print_return_call("framerate")
+        return 25
+
+    @framerate.setter
+    def framerate(self, value):
+        print_return_call("framerate", value)
+
+    @property
+    def resolution(self):
+        print_return_call("resolution")
+        return 1024, 768
+
+    @resolution.setter
+    def resolution(self, value):
+        print_return_call("resolution", value)
+
     # METHODS #
 
     def auto_exposure(self, value):
@@ -64,7 +82,7 @@ class SimCam(AbsCamera):
         """Close the camera connection."""
         print_return_call("close")
 
-    def start_preview(self):
+    def start_preview(self, *args, **kwargs):
         """Start camera preview."""
         print_return_call("start_preview")
 

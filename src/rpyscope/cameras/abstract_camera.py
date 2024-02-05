@@ -39,6 +39,33 @@ class AbsCamera(metaclass=abc.ABCMeta):
     def contrast(self, value):
         pass
 
+    @property
+    @abc.abstractmethod
+    def framerate(self):
+        """Get / set framerate of camera.
+
+        # todo docstring
+        """
+
+    @framerate.setter
+    @abc.abstractmethod
+    def framerate(self, value):
+        pass
+
+    @property
+    @abc.abstractmethod
+    def resolution(self):
+        """Get / set resolution of camera.
+
+        :return: Resolution.
+        :rtype: str
+        """
+
+    @resolution.setter
+    @abc.abstractmethod
+    def resolution(self, value):
+        pass
+
     # METHODS #
 
     @abc.abstractmethod

@@ -1,9 +1,9 @@
 """GUI for RPyMicroscope."""
 
 from datetime import datetime
+import importlib.metadata
 import os
 from pathlib import Path
-import sys
 
 from PyQt5.QtWidgets import (
     QWidget,
@@ -26,27 +26,23 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QFont, QDoubleValidator, QKeySequence
 
-from add_widgets import LineEditHistory
 from pyqtconfig import ConfigManager, ConfigDialog, QSettingsManager
-from microscope import Microscope
+
+from rpyscope.add_widgets import LineEditHistory
+from rpyscope.microscope import Cam, Microscope
 
 
 class MainWindowControls(QMainWindow):
     """Main Window with adjustments, etc. for Microscope GUI"""
 
-    def __init__(self):
-        # info variables
-        self.version = "0.0.1"
-        self.author = "Reto Trappitsch and Louis Linder"
-        self.link = "https://github.com/galactic-forensics/RPyScope"
+    def __init__(self, camera: Cam = Cam.RPi_HQ) -> None:
+        """Initialize the main GUI window.
 
-        print(
-            f"Welcome to RPyScope!\n"
-            f"Version: {self.version}\n"
-            f"Authors: {self.author}\n"
-            f"License: GPLv3\n"
-            f"See {self.link} for more information."
-        )
+        :param camera: Camera type to use.
+        """
+        self.version = importlib.metadata.version("rpyscope")
+        self.author = "Reto Trappitsch"
+        self.link = "https://github.com/galactic-forensics/RPyScope"
 
         # init and sizing
         super().__init__()
@@ -66,7 +62,7 @@ class MainWindowControls(QMainWindow):
         self.error_dialog.setGeometry(5, 80, 300, 200)
 
         # Load Microscope interactions
-        self.scope = Microscope()
+        self.scope = Microscope(camera)
         self.cam = self.scope.cam
 
         # Load settings
@@ -741,8 +737,6 @@ def layout_horizontal(items, align):
 
 
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    rpyscope_app = MainWindowControls()
-    rpyscope_app.show()
+    from rpyscope import demo
 
-    sys.exit(app.exec_())
+    demo()
