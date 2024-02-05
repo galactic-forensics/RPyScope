@@ -2,7 +2,7 @@
 
 import sys
 
-from PyQt5 import QtWidgets
+from qtpy import QtWidgets
 
 from rpyscope.microscope import Cam
 from rpyscope.gui_qt import MainWindowControls
