@@ -77,7 +77,7 @@ To run the software,
 go into the folder `RPyScope/rpyscope`
 and run the command:
 ```bash
-python3 gui_qt.py
+python3 gui.py
 ```
 You should see the software start up. Give it a try!
 

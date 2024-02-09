@@ -5,7 +5,7 @@ import sys
 from qtpy import QtWidgets
 
 from rpyscope.microscope import Cam
-from rpyscope.gui_qt import MainWindowControls
+from rpyscope.gui import MainWindowControls
 
 
 def demo():
@@ -17,10 +17,10 @@ def demo():
     sys.exit(app.exec_())
 
 
-def rpihq_legacy():
-    """Run the app with the legacy support for the RPi HQ."""
+def rpihq():
+    """Run the app with support for the RPi HQ camera."""
     app = QtWidgets.QApplication(sys.argv)
-    rpyscope_app = MainWindowControls(Cam.RPi_HQ)
+    rpyscope_app = MainWindowControls(Cam.RPiCam)
     rpyscope_app.show()
 
     sys.exit(app.exec_())

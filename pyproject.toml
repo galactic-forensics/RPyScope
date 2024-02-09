@@ -15,8 +15,8 @@ requires-python = ">= 3.11"
 license = { text = "MIT" }
 
 [project.scripts]
-rpyscope_demo = "rpyscope.__init__:demo"
-rpyscope_legacy = "rpyscope.__init__:rpihq_legacy"
+rpyscope_demo = "rpyscope:demo"
+rpyscope = "rpyscope:rpihq"
 
 [build-system]
 requires = ["hatchling"]

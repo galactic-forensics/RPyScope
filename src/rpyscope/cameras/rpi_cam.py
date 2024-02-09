@@ -1,24 +1,24 @@
 """Class for the RPi camera."""
 
-from rpyscope.cameras.abstract_camera import AbsCamera
+# from rpyscope.cameras.abstract_camera import AbsCamera
 
 try:
-    from picamera import PiCamera
+    from picamera2 import Picamera2
 except ModuleNotFoundError:
-    print("No picamera Module. Please choose Demo camera.")
+    print("No picamera2 module. Please choose Demo camera.")
 
-    class PiCamera:
+    class RPiCamera:
         """Dummy class so we can init the RPiCam."""
 
         pass
 
 
-class RPiCam(PiCamera):
-    __metaclass__ = AbsCamera
-    """Re-implementation of the PiCamera instance of picamera.
+class RPiCam(Picamera2):
+    # __metaclass__ = AbsCamera
+    """Re-implementation of the Picamera2 instance of picamera2.
 
     This is done such that we are easily capable of implementing the same routines
-    for various cameras. Most of the software will be built on PiCamera commands,
+    for various cameras. Most of the software will be built on Picamera2 commands,
     so here we really only add where absolutely necessary.
     """
 
@@ -32,12 +32,14 @@ class RPiCam(PiCamera):
         :param value: True for on, False for off.
         :type value: bool
         """
-        if value:
-            self.exposure_mode = "auto"
-            self.awb_mode = "auto"
-        else:
-            self.shutter_speed = self.exposure_speed
-            self.exposure_mode = "off"
-            g = self.awb_gains
-            self.awb_mode = "off"
-            self.awb_gains = g
+        pass
+
+    #     if value:
+    #         self.exposure_mode = "auto"
+    #         self.awb_mode = "auto"
+    #     else:
+    #         self.shutter_speed = self.exposure_speed
+    #         self.exposure_mode = "off"
+    #         g = self.awb_gains
+    #         self.awb_mode = "off"
+    #         self.awb_gains = g

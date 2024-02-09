@@ -4,10 +4,11 @@ from datetime import datetime
 import importlib.metadata
 import os
 from pathlib import Path
+import sys
 
 from qtpy import QtCore, QtGui, QtWidgets
-
-from pyqtconfig import ConfigManager, ConfigDialog, QSettingsManager
+from picamera2 import Preview
+from pyqtconfig import ConfigManager, ConfigDialog
 
 from rpyscope.add_widgets import LineEditHistory
 from rpyscope.microscope import Cam, Microscope
@@ -16,7 +17,7 @@ from rpyscope.microscope import Cam, Microscope
 class MainWindowControls(QtWidgets.QMainWindow):
     """Main Window with adjustments, etc. for Microscope GUI"""
 
-    def __init__(self, camera: Cam = Cam.RPi_HQ) -> None:
+    def __init__(self, camera: Cam = Cam.RPiCam) -> None:
         """Initialize the main GUI window.
 
         :param camera: Camera type to use.
@@ -465,17 +466,20 @@ class MainWindowControls(QtWidgets.QMainWindow):
     def preview_cam(self):
         """Preview camera."""
         if not self.is_preview:  # not preview
-            self.set_resolution()
-            self.set_framerate()
+            # self.set_resolution()
+            # self.set_framerate()
             self.preview_button.setText("Stop Preview [P]")
             self.preview_button.setStyleSheet(f"background-color:{self.col_red}")
-            (w_camera, h_camera) = self.cam.resolution
-            aspect_ratio = w_camera / h_camera
-            x = int(self.config.get("preview_x"))
-            y = int(self.config.get("preview_y"))
-            h = int(self.config.get("preview_h"))
-            w = int(h * aspect_ratio)
-            self.cam.start_preview(fullscreen=False, window=(x, y, w, h))
+            # (w_camera, h_camera) = self.cam.resolution
+            # aspect_ratio = w_camera / h_camera
+            # x = int(self.config.get("preview_x"))
+            # y = int(self.config.get("preview_y"))
+            # h = int(self.config.get("preview_h"))
+            # w = int(h * aspect_ratio)
+            camera_config = self.cam.create_preview_configuration()
+            self.cam.configure(camera_config)
+            self.cam.start_preview(Preview.QTGL)
+            self.cam.start()
             self.is_preview = True
         else:
             self.preview_button.setText("Start Preview [P]")
@@ -720,6 +724,8 @@ def layout_horizontal(items, align):
 
 
 if __name__ == "__main__":
-    from rpyscope import demo
+    app = QtWidgets.QApplication(sys.argv)
+    rpyscope_app = MainWindowControls(Cam.RPiCam)
+    rpyscope_app.show()
 
-    demo()
+    sys.exit(app.exec_())

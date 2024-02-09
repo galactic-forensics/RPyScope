@@ -11,7 +11,7 @@ from rpyscope.cameras import simulation
 class Cam(Enum):
     """Enum Class for Available / Implemented Cameras."""
 
-    RPi_HQ = rpi_cam.RPiCam()
+    RPiCam = rpi_cam.RPiCam()
     Demo = simulation.SimCam()
 
 
@@ -23,7 +23,7 @@ class Microscope:
     and capture video classes inherit from Microscope class.
     """
 
-    def __init__(self, default_cam=Cam.RPi_HQ):
+    def __init__(self, default_cam=Cam.RPiCam):
         """Initialize the Microscope class."""
         self.cam = None
         self.default_cam = default_cam
