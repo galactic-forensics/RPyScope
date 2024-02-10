@@ -588,15 +588,15 @@ class MainWindowControls(QtWidgets.QMainWindow):
 
     def set_resolution(self):
         new_res = self.res_input.text()
-        if str(self.cam.resolution) != new_res:
-            previous_resolution = self.cam.resolution
+        if str(self.cam.resolution_video_mode) != new_res:
+            previous_resolution = self.cam.resolution_video_mode
             try:
-                self.cam.resolution = new_res
+                self.cam.resolution_video_mode = new_res
                 print(f"resolution set to {new_res}.")
             except:
                 print(f"resolution {new_res} not supported.")
                 self.res_input.setText(str(previous_resolution))
-                self.cam.resolution = previous_resolution
+                self.cam.resolution_video_mode = previous_resolution
 
     def reset_framerate(self):
         self.fps_input.setText(self.config._get_default("framerate"))

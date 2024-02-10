@@ -1,5 +1,6 @@
 # Development tools
 
+
 class SimCamera:
     """Simulation camera to use when picamera2 is not installed."""
 

@@ -14,7 +14,7 @@ class PreviewWindow(QtWidgets.QMainWindow):
 
     def __init__(self, picam2: Picamera2, parent=None, **kwargs):
         """Initialize the class.
-        
+
         :param picam2: Camera instance to display.
         :param parent: Parent Widget.
         :param kwargs: Keyword arguments:
@@ -25,18 +25,19 @@ class PreviewWindow(QtWidgets.QMainWindow):
             transform: Transfomration for preview, default None
         """
         super().__init__(parent=parent)
-        
+
         self.setWindowTitle("Live preview")
-        
+
         top = kwargs.get("top", 0)
         left = kwargs.get("left", 350)
         height = kwargs.get("height", 600)
         width = kwargs.get("width", 800)
-        
+
         if Picamera2.__name__ != "SimCamera":
-            preview_widget = QGlPicamera2(picam2, transform=kwargs.get("transform", None))
+            preview_widget = QGlPicamera2(
+                picam2, transform=kwargs.get("transform", None)
+            )
             self.setCentralWidget(preview_widget)
-        
+
         self.show()
         self.setGeometry(left, top, width, height)
-        
