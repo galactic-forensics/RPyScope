@@ -67,18 +67,24 @@ class PiCamHQ:
     @property
     def info(self) -> tuple[tuple, tuple]:
         """Get information about the camera.
-        
-        This information can be displayed as a table. The first tuple returned 
-        should be the header(s) of the table. The second returned tuples should be 
+
+        This information can be displayed as a table. The first tuple returned
+        should be the header(s) of the table. The second returned tuples should be
         the data per column.
-        
+
         :return: Two tuples:
             - First tuple: Headers
             - Second tuple: Tuple of tuples... data
         """
         hdr = (
-            "Mode", "Resolution (px)", "Aspect Ratio",
-            "Video", "Frame rate (fps)", "Image", "Field of View", "Binning & Scaling"
+            "Mode",
+            "Resolution (px)",
+            "Aspect Ratio",
+            "Video",
+            "Frame rate (fps)",
+            "Image",
+            "Field of View",
+            "Binning & Scaling",
         )
 
         table = (
@@ -89,7 +95,7 @@ class PiCamHQ:
             [f"{it} - {jt}" for it, jt in self._limits_frame_rates],
             ["x" if it else "" for it in self._image_modes],
             self._fovs,
-            self._binning_scalings
+            self._binning_scalings,
         )
 
         return hdr, table
@@ -113,7 +119,7 @@ class PiCamHQ:
         self._mode = value
         self._resolution_video_mode = self._resolutions[idx]
         self._limits_frame_rate = self._limits_frame_rates[idx]
-        
+
     @property
     def name(self):
         """Get the name of the camera."""

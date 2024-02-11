@@ -36,7 +36,7 @@ class MicroscopeControls(QtWidgets.QMainWindow):
         left = 0
         top = 0
         width = 300
-        height = 700
+        height = 500
         self.setWindowTitle("Control")
 
         # setup defaults for program
@@ -99,10 +99,16 @@ class MicroscopeControls(QtWidgets.QMainWindow):
         # set quit shortcut to Ctrl+Q
         quit_sc = QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+Q"), self)
         quit_sc.activated.connect(self.close)
+        
+        title_lbl = QtWidgets.QLabel("RPyScope")
+        title_lbl.setFont(title_font)
+        layout.addLayout(center_me(title_lbl))
+        
+        
 
         # SETTINGS AND INFO
         htmp = QtWidgets.QHBoxLayout()
-        
+
         info_button = QtWidgets.QPushButton("Info")
         info_button.setToolTip("Display info about the camera.")
         info_button.clicked.connect(
@@ -111,6 +117,12 @@ class MicroscopeControls(QtWidgets.QMainWindow):
         htmp.addWidget(info_button)
         htmp.addStretch()
         
+        preview_button = QtWidgets.QPushButton("Preview")
+        preview_button.setToolTip("Show preview again if it was closed.")
+        preview_button.clicked.connect(self.preview.show)
+        htmp.addWidget(preview_button)
+        htmp.addStretch()
+
         settings_button = QtWidgets.QPushButton("Settings")
         settings_button.clicked.connect(self.settings_dialog)
         settings_button.setToolTip("Change program settings")
@@ -150,7 +162,7 @@ class MicroscopeControls(QtWidgets.QMainWindow):
         mov_lbl.setFont(title_font)
         layout.addLayout(center_me(mov_lbl))
 
-        self.mov_resolution = QtWidgets.QComboBox(minimumWidth=200)
+        self.mov_resolution = QtWidgets.QComboBox(minimumWidth=120)
         self.mov_resolution.insertItems(
             0, [f"{w}x{h}" for w, h in self._camera_model.resolutions_video_mode]
         )
@@ -190,7 +202,7 @@ class MicroscopeControls(QtWidgets.QMainWindow):
         img_lbl.setFont(title_font)
         layout.addLayout(center_me(img_lbl))
 
-        self.img_resolution = QtWidgets.QComboBox(minimumWidth=200)
+        self.img_resolution = QtWidgets.QComboBox(minimumWidth=120)
         self.img_resolution.insertItems(
             0, [f"{w}x{h}" for w, h in self._camera_model.resolutions_image_mode]
         )
