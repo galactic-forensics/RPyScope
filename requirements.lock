@@ -8,7 +8,6 @@
 #   with-sources: false
 
 -e file:.
-darkdetect==0.8.0
 packaging==23.2
 pyqt5==5.15.10
 pyqt5-qt5==5.15.2

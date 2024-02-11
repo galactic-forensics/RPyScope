@@ -100,11 +100,22 @@ class MicroscopeControls(QtWidgets.QMainWindow):
         quit_sc = QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+Q"), self)
         quit_sc.activated.connect(self.close)
 
-        # Settings
+        # SETTINGS AND INFO
+        htmp = QtWidgets.QHBoxLayout()
+        
+        info_button = QtWidgets.QPushButton("Info")
+        info_button.setToolTip("Display info about the camera.")
+        info_button.clicked.connect(
+            lambda: ut.CameraInfo(self._camera_model, self).exec
+        )
+        htmp.addWidget(info_button)
+        htmp.addStretch()
+        
         settings_button = QtWidgets.QPushButton("Settings")
         settings_button.clicked.connect(self.settings_dialog)
         settings_button.setToolTip("Change program settings")
-        layout.addWidget(settings_button)
+        htmp.addWidget(settings_button)
+        layout.addLayout(htmp)
 
         # FILE NAME
         fn_lbl = QtWidgets.QLabel("Filename and path")

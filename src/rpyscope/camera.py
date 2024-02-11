@@ -27,6 +27,7 @@ class PiCamHQ:
 
     def __init__(self):
         """Initialize the property class."""
+        self._name = "Raspberry Pi High Quality Camera"
         # these tuples are the configurations. They must have equal length
         self._modes = (1, 2, 3, 4)  # integers
         self._resolutions = (
@@ -64,10 +65,34 @@ class PiCamHQ:
         self._video_format = "h264"
 
     @property
-    def info(self):
-        """Get an information table with the given settings."""
-        # info_str = """Mode\tResolution\tAspect Ratio\tVideo\tImage\t"""
-        return None
+    def info(self) -> tuple[tuple, tuple]:
+        """Get information about the camera.
+        
+        This information can be displayed as a table. The first tuple returned 
+        should be the header(s) of the table. The second returned tuples should be 
+        the data per column.
+        
+        :return: Two tuples:
+            - First tuple: Headers
+            - Second tuple: Tuple of tuples... data
+        """
+        hdr = (
+            "Mode", "Resolution (px)", "Aspect Ratio",
+            "Video", "Frame rate (fps)", "Image", "Field of View", "Binning & Scaling"
+        )
+
+        table = (
+            [str(it) for it in self._modes],
+            [f"{w}x{h}" for w, h in self._resolutions],
+            self._aspect_ratios,
+            ["x" if it else "" for it in self._video_modes],
+            [f"{it} - {jt}" for it, jt in self._limits_frame_rates],
+            ["x" if it else "" for it in self._image_modes],
+            self._fovs,
+            self._binning_scalings
+        )
+
+        return hdr, table
 
     @property
     def limits_frame_rate(self) -> tuple:
@@ -88,6 +113,11 @@ class PiCamHQ:
         self._mode = value
         self._resolution_video_mode = self._resolutions[idx]
         self._limits_frame_rate = self._limits_frame_rates[idx]
+        
+    @property
+    def name(self):
+        """Get the name of the camera."""
+        return self._name
 
     @property
     def resolution_image_mode(self) -> tuple:
