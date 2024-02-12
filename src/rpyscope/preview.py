@@ -5,6 +5,7 @@ from qtpy import QtWidgets
 try:
     from picamera2.previews.qt import QGlPicamera2
     from picamera2 import Picamera2
+    from libcamera import Transform
 except ImportError:  # local development, not on RPi
     from rpyscope.dev import SimCamera as Picamera2
 
@@ -22,7 +23,8 @@ class PreviewWindow(QtWidgets.QMainWindow):
             left: left position of window, default 350
             height: Height of window, default 600
             width: Width of window, default 800
-            transform: Transfomration for preview, default None
+            hflip: Horizontal flip, default False
+            vflip: Vertical flip, default False
         """
         super().__init__(parent=parent)
 
@@ -33,10 +35,13 @@ class PreviewWindow(QtWidgets.QMainWindow):
         height = kwargs.get("height", 600)
         width = kwargs.get("width", 800)
 
+        hflip = kwargs.get("hflip", False)
+        vflip = kwargs.get("vflip", False)
+        print(f"{hflip=}, {vflip=}")
+        
         if Picamera2.__name__ != "SimCamera":
-            preview_widget = QGlPicamera2(
-                picam2, transform=kwargs.get("transform", None)
-            )
+            transform = Transform(hflip=int(hflip), vflip=int(vflip))
+            preview_widget = QGlPicamera2(picam2, transform=transform)
             self.setCentralWidget(preview_widget)
 
         self.show()

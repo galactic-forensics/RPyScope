@@ -51,7 +51,7 @@ class MicroscopeControls(QtWidgets.QMainWindow):
         self._movie_is_recording = False
         self._timelapse_is_recording = False
         self._timelapse_counter = 0
-        
+
         # timers
         self._movie_timer = QtCore.QTimer()
         self._movie_timer.timeout.connect(self.record_movie)
@@ -61,7 +61,12 @@ class MicroscopeControls(QtWidgets.QMainWindow):
         # setup camera and start preview
         self.cam = Camera()
 
-        self.preview = PreviewWindow(self.cam, parent=self)
+        self.preview = PreviewWindow(
+            self.cam,
+            parent=self,
+            hflip=self.config.get("Flip horizontally"),
+            vflip=self.config.get("Flip vertically"),
+        )
         self.cam.start()
 
         # private variables to be stored in controller
@@ -164,7 +169,6 @@ class MicroscopeControls(QtWidgets.QMainWindow):
         date_prefix_chkbox.setChecked(self._date_prefix)
         date_prefix_chkbox.stateChanged.connect(lambda x: self._set_date_prefix(x))
         layout.addLayout(label_element_layout("Date prefix", date_prefix_chkbox))
-        # todo - Auto increment (by default, not a setting)
 
         self._layout_hline_separator(layout)
 
@@ -324,8 +328,6 @@ class MicroscopeControls(QtWidgets.QMainWindow):
         if self._timelapse_counter == 0:  # stop right after taking last image
             self.capture_image()
 
-
-
     def mov_resolution_changed(self):
         """Set framerate when movie resolution was changed."""
         print("mov resolution changed")
@@ -337,7 +339,6 @@ class MicroscopeControls(QtWidgets.QMainWindow):
         self.mov_framerate.setToolTip(
             f"Frame rate limits: {frame_rate_limits[0]} to {frame_rate_limits[1]}"
         )
-        # todo: set frame rate tooltip according to current limits
 
     def record_movie(self):
         """Start/stop recording a movie, depending on current state."""
@@ -373,8 +374,8 @@ class MicroscopeControls(QtWidgets.QMainWindow):
 
     def set_user_path(self):
         """Set user path to a chosen value.
-        
-        Bring up a QFileDialog to choose a path, then set it to the user path as a 
+
+        Bring up a QFileDialog to choose a path, then set it to the user path as a
         Path object.
         """
         new_path = QtWidgets.QFileDialog.getExistingDirectory(
@@ -389,7 +390,9 @@ class MicroscopeControls(QtWidgets.QMainWindow):
         """Display a settings dialog."""
         config_dialog = pyqtconfig.ConfigDialog(self.config, self, cols=1)
         config_dialog.setWindowTitle("Settings")
-        config_dialog.accepted.connect(lambda: self.settings_update(config_dialog.config))
+        config_dialog.accepted.connect(
+            lambda: self.settings_update(config_dialog.config)
+        )
         config_dialog.exec()
 
     def settings_load(self):
@@ -397,37 +400,39 @@ class MicroscopeControls(QtWidgets.QMainWindow):
         default_settings = {
             "Flip horizontally": False,
             "Flip vertically": False,
-            "Rotation": 0,
             "user_path": str(Path.home().joinpath("Desktop")),
         }
 
         default_settings_metadata = {
-            "Rotation": {
-                "preferred_handler": ut.SettingsQComboBox,
-                "preferred_map_dict": {
-                    "0": 0,
-                    "90": 90,
-                    "180": 180,
-                    "270": 270,
-                },
-            },
             "user_path": {"prefer_hidden": True},
         }
 
         self.config = pyqtconfig.ConfigManager(
-            default_settings,
-            filename=Path.home().joinpath(".config/rpyscope.json")
+            default_settings, filename=Path.home().joinpath(".config/rpyscope.json")
         )
         self.config.set_many_metadata(default_settings_metadata)
-    
+
     def settings_update(self, new_settings):
         """Update settings from the settings dialog."""
-        self.config.set_many(new_settings.as_dict())
+        new_dict = new_settings.as_dict()
+
+        # if transforms have changed, tell user to restart software
+        if new_dict["Flip horizontally"] != self.config.get(
+            "Flip horizontally"
+        ) or new_dict["Flip vertically"] != self.config.get("Flip vertically"):
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Restart required",
+                "You have changed the flip settings. "
+                "Please restart the software for the changes to take effect.",
+                QtWidgets.QMessageBox.Ok,
+            )
+
+        self.config.set_many(new_dict)
         self.config.save()
 
     def timelapse_changed(self, state):
         """Act on change in timelapse settings."""
-        print(f"Timelapse change: {state}")
         widgets_active = [
             self.img_timelapse_time,
             self.img_timelapse_time_unit,
