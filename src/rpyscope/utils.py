@@ -54,6 +54,15 @@ class CameraInfo(QtWidgets.QDialog):
         self.show()
 
 
+class SettingsQComboBox(QtWidgets.QComboBox):
+    """Create a narrow QComboBox for image rotation settings in Settings."""
+
+    def __init__(self, *args, **kwargs):
+        """Initialize and set maximum width."""
+        super().__init__(*args, **kwargs)
+        self.setMaximumWidth(100)
+
+
 def filename_increment(pth: Path, fname: str, ext: str, date_prefix=True) -> Path:
     """Create a filename, increment it with three digits, and return the full path.
 

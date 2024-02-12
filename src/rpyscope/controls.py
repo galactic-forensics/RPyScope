@@ -3,6 +3,7 @@
 from pathlib import Path
 
 from qtpy import QtCore, QtGui, QtWidgets
+import pyqtconfig
 
 from rpyscope.camera import Camera, PiCamHQ
 from rpyscope.preview import PreviewWindow
@@ -40,14 +41,17 @@ class MicroscopeControls(QtWidgets.QMainWindow):
         height = 500
         self.setWindowTitle("Control")
 
+        # settings manager for the program
+        self.config = None
+        self.settings_load()
+
         # setup defaults for program
         self._date_prefix = True
         self._timelapse = False
-        self._user_path = Path.home().joinpath("Desktop")
         self._movie_is_recording = False
         self._timelapse_is_recording = False
         self._timelapse_counter = 0
-
+        
         # timers
         self._movie_timer = QtCore.QTimer()
         self._movie_timer.timeout.connect(self.record_movie)
@@ -142,7 +146,7 @@ class MicroscopeControls(QtWidgets.QMainWindow):
         fn_lbl.setFont(title_font)
         layout.addLayout(center_me(fn_lbl))
 
-        self.path_label = QtWidgets.QLabel(str(self._user_path.absolute()))
+        self.path_label = QtWidgets.QLabel(self.config.get("user_path"))
         self.path_label.setToolTip("Current path files are stored in.")
         path_set_button = QtWidgets.QPushButton("Set Path", maximumWidth=150)
         path_set_button.clicked.connect(self.set_user_path)
@@ -320,6 +324,8 @@ class MicroscopeControls(QtWidgets.QMainWindow):
         if self._timelapse_counter == 0:  # stop right after taking last image
             self.capture_image()
 
+
+
     def mov_resolution_changed(self):
         """Set framerate when movie resolution was changed."""
         print("mov resolution changed")
@@ -372,17 +378,52 @@ class MicroscopeControls(QtWidgets.QMainWindow):
         Path object.
         """
         new_path = QtWidgets.QFileDialog.getExistingDirectory(
-            self, "Select directory", str(self._user_path)
+            self, "Select directory", self.config.get("user_path")
         )
         if new_path:
-            self._user_path = Path(new_path)
-            self.path_label.setText(str(self._user_path.absolute()))
-        
+            self.config.set("user_path", str(Path(new_path)))
+            self.config.save()
+            self.path_label.setText(self.config.get("user_path"))
 
     def settings_dialog(self):
         """Display a settings dialog."""
-        print("Settings dialog")
-        print(f"{self._user_path=}")
+        config_dialog = pyqtconfig.ConfigDialog(self.config, self, cols=1)
+        config_dialog.setWindowTitle("Settings")
+        config_dialog.accepted.connect(lambda: self.settings_update(config_dialog.config))
+        config_dialog.exec()
+
+    def settings_load(self):
+        """Load settings and setup the ConfigManager using pyqtconfig."""
+        default_settings = {
+            "Flip horizontally": False,
+            "Flip vertically": False,
+            "Rotation": 0,
+            "user_path": str(Path.home().joinpath("Desktop")),
+        }
+
+        default_settings_metadata = {
+            "Rotation": {
+                "preferred_handler": ut.SettingsQComboBox,
+                "preferred_map_dict": {
+                    "0": 0,
+                    "90": 90,
+                    "180": 180,
+                    "270": 270,
+                },
+            },
+            "user_path": {"prefer_hidden": True},
+        }
+
+        self.config = pyqtconfig.ConfigManager(
+            default_settings,
+            filename=Path.home().joinpath(".config/rpyscope.json")
+        )
+        self.config.set_many_metadata(default_settings_metadata)
+    
+    def settings_update(self, new_settings):
+        """Update settings from the settings dialog."""
+        self.config.set_many(new_settings.as_dict())
+        self.config.save()
 
     def timelapse_changed(self, state):
         """Act on change in timelapse settings."""
