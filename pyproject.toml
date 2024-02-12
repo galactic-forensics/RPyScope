@@ -33,3 +33,7 @@ allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/rpyscope"]
+
+[tool.pytest]
+testpaths = "tests"
+addopts = "--cov=rpyscope -v"

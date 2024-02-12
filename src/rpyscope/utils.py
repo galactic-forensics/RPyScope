@@ -1,6 +1,8 @@
 # Utility functions and enums
 
+from datetime import datetime
 from enum import IntEnum
+from pathlib import Path
 
 from qtpy import QtGui, QtWidgets
 
@@ -50,3 +52,24 @@ class CameraInfo(QtWidgets.QDialog):
         layout.addWidget(button_box)
 
         self.show()
+
+
+def filename_increment(pth: Path, fname: str, ext: str, date_prefix=True) -> Path:
+    """Create a filename, increment it with three digits, and return the full path.
+
+    The returned filename will be a complete path, where the filename is going to be
+    "fname-XXX.ext". Here, XXX is a three-digit, auto-incrementing number.
+
+    :param pth: Path where file should live.
+    :param fname: File name, as a string.
+    :param ext: File extension.
+    :param date_prefix: If True, add a date prefix to the filename.
+    """
+    if date_prefix:
+        fname = f"{datetime.now().strftime('%Y-%m-%d')}-{fname}"
+    it = 0
+    while True:
+        new_fname = pth.joinpath(f"{fname}-{it:03d}.{ext}")
+        if not new_fname.exists():
+            return new_fname
+        it += 1

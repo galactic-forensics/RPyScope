@@ -26,7 +26,7 @@ class MicroscopeControls(QtWidgets.QMainWindow):
         self.img_resolution = None
         self.mov_record_button = None
         self.mov_rec_time_unit = None
-        self.file_name = None
+        self.file_name_input = None
         self.path_label = None
         self.mov_rec_time = None
         self.mov_framerate = None
@@ -43,6 +43,15 @@ class MicroscopeControls(QtWidgets.QMainWindow):
         self._date_prefix = True
         self._timelapse = False
         self._user_path = Path.home().joinpath("Desktop")
+        self._movie_is_recording = False
+        self._timelapse_is_recording = False
+        self._timelapse_counter = 0
+
+        # timers
+        self._movie_timer = QtCore.QTimer()
+        self._movie_timer.timeout.connect(self.record_movie)
+        self._timelapse_timer = QtCore.QTimer()
+        self._timelapse_timer.timeout.connect(self._capture_timelapse_image)
 
         # setup camera and start preview
         self.cam = Camera()
@@ -99,12 +108,10 @@ class MicroscopeControls(QtWidgets.QMainWindow):
         # set quit shortcut to Ctrl+Q
         quit_sc = QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+Q"), self)
         quit_sc.activated.connect(self.close)
-        
+
         title_lbl = QtWidgets.QLabel("RPyScope")
         title_lbl.setFont(title_font)
         layout.addLayout(center_me(title_lbl))
-        
-        
 
         # SETTINGS AND INFO
         htmp = QtWidgets.QHBoxLayout()
@@ -116,7 +123,7 @@ class MicroscopeControls(QtWidgets.QMainWindow):
         )
         htmp.addWidget(info_button)
         htmp.addStretch()
-        
+
         preview_button = QtWidgets.QPushButton("Preview")
         preview_button.setToolTip("Show preview again if it was closed.")
         preview_button.clicked.connect(self.preview.show)
@@ -145,8 +152,8 @@ class MicroscopeControls(QtWidgets.QMainWindow):
         tmp_layout.addWidget(self.path_label)
         layout.addLayout(tmp_layout)
 
-        self.file_name = QtWidgets.QLineEdit(minimumWidth=200)
-        layout.addLayout(label_element_layout("Filename", self.file_name))
+        self.file_name_input = QtWidgets.QLineEdit(minimumWidth=200)
+        layout.addLayout(label_element_layout("Filename", self.file_name_input))
         date_prefix_chkbox = QtWidgets.QCheckBox()
         date_prefix_chkbox.setToolTip("Prefix the filename with current date?")
         date_prefix_chkbox.setChecked(self._date_prefix)
@@ -254,11 +261,63 @@ class MicroscopeControls(QtWidgets.QMainWindow):
         layout.addWidget(self.img_record_button)
 
     def capture_image(self):
-        """Capture an image."""
-        # todo: auto increment filename setup!
+        """Handle image capture single and timelapse."""
         # todo: dump to numpy array and then from numpy save as tiff.
-        print("capture image")
-        print(f"{self._date_prefix=}")
+        if self._timelapse:
+            if not self._timelapse_is_recording:
+                self._timelapse_is_recording = True
+
+                self.img_record_button.setText("Stop timelapse")
+                self.img_record_button.setToolTip("Stop timelapse.")
+
+                self.mov_record_button.setEnabled(False)
+                self._set_button_state(self.img_record_button, True)
+
+                interval_s = (
+                    self.img_timelapse_time.value()
+                    * ut.TimeUnits[self.img_timelapse_time_unit.currentText()]
+                )
+                duration_s = (
+                    self.img_timelapse_duration.value()
+                    * ut.TimeUnits[self.img_timelapse_duration_unit.currentText()]
+                )
+
+                if duration_s == 0:
+                    self._timelapse_counter = -1
+                else:
+                    self._timelapse_counter = duration_s // interval_s + 1
+
+                self._capture_timelapse_image()
+
+                self._timelapse_timer.start(interval_s * 1000)
+            else:
+                self._timelapse_is_recording = False
+
+                self.img_record_button.setText("Start timelapse")
+                self.img_record_button.setToolTip("Start timelapse.")
+
+                self.mov_record_button.setEnabled(True)
+                self._set_button_state(self.img_record_button, False)
+
+                self._timelapse_timer.stop()
+        else:
+            self._capture_single_image()
+
+    def _capture_single_image(self):
+        """Capture a single image."""
+        print("capture single image")
+
+        # todo: get filename, capture image to filename
+
+    def _capture_timelapse_image(self):
+        """Capture a timelapse image."""
+        if self._timelapse_counter > 0:
+            self._timelapse_counter -= 1  # we have a limited number of images
+
+        self._capture_single_image()
+
+        if self._timelapse_counter == 0:  # stop right after taking last image
+            self.capture_image()
 
     def mov_resolution_changed(self):
         """Set framerate when movie resolution was changed."""
@@ -275,7 +334,35 @@ class MicroscopeControls(QtWidgets.QMainWindow):
 
     def record_movie(self):
         """Start/stop recording a movie, depending on current state."""
-        print("record movie")
+        if not self._movie_is_recording:
+            self._movie_is_recording = True
+
+            self.mov_record_button.setText("Stop recording movie")
+            self.mov_record_button.setToolTip("Stop recording movie.")
+            self._set_button_state(self.mov_record_button, True)
+
+            self.img_record_button.setEnabled(False)
+
+            recording_time = (
+                self.mov_rec_time.value()
+                * ut.TimeUnits[self.mov_rec_time_unit.currentText()]
+            )
+
+            if recording_time > 0:
+                self._movie_timer.start(recording_time * 1000)
+
+            print("start recording movie")
+        else:
+            self._movie_is_recording = False
+
+            self.mov_record_button.setText("Start recording movie")
+            self.mov_record_button.setToolTip("Start recording movie.")
+
+            self._set_button_state(self.mov_record_button, False)
+            self.img_record_button.setEnabled(True)
+
+            self._movie_timer.stop()
+            print("stop recording movie")
 
     def set_user_path(self):
         """Set user path to a chosen value."""
@@ -301,10 +388,12 @@ class MicroscopeControls(QtWidgets.QMainWindow):
                 "Capture image. Keyboard shortcut: Spacebar"
             )
             self.img_record_button.setShortcut(QtGui.QKeySequence("space"))
+            self._timelapse = False
         else:
             self.img_record_button.setText("Start timelapse")
             self.img_record_button.setToolTip("Start timelapse.")
             self.img_record_button.setShortcut(QtGui.QKeySequence())
+            self._timelapse = True
 
     @staticmethod
     def _set_button_state(button: QtWidgets.QPushButton, is_on=False):
