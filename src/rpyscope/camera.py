@@ -2,8 +2,10 @@
 
 try:
     from picamera2 import Picamera2
+    from libcamera import Transform
 except ImportError:  # local dev, not on RPi
     from rpyscope.dev import SimCamera as Picamera2
+    from rpyscope.dev import Transform
 
 
 class Camera(Picamera2):
@@ -15,11 +17,21 @@ class Camera(Picamera2):
 
     def __init__(self, *args, **kwargs):
         """Initialize the camera."""
-        super().__init__(*args, **kwargs)
+        super().__init__()
+        
+        # define transformation
+        hflip = kwargs.get("hflip", False)
+        vflip = kwargs.get("vflip", False)
+        transform = Transform(hflip=hflip, vflip=vflip)
 
         # configure standard preview configuration
         _preview_configuration = self.create_preview_configuration()
+        _preview_configuration["transform"] = transform
         self.configure(_preview_configuration)
+        
+        self._img_configuration = self.create_still_configuration()
+        self._img_configuration["transform"] = transform
+        
 
 
 class PiCamHQ:

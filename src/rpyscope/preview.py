@@ -35,13 +35,8 @@ class PreviewWindow(QtWidgets.QMainWindow):
         height = kwargs.get("height", 600)
         width = kwargs.get("width", 800)
 
-        hflip = kwargs.get("hflip", False)
-        vflip = kwargs.get("vflip", False)
-        print(f"{hflip=}, {vflip=}")
-        
         if Picamera2.__name__ != "SimCamera":
-            transform = Transform(hflip=int(hflip), vflip=int(vflip))
-            preview_widget = QGlPicamera2(picam2, transform=transform)
+            preview_widget = QGlPicamera2(picam2)
             self.setCentralWidget(preview_widget)
 
         self.show()

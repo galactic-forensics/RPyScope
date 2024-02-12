@@ -59,13 +59,14 @@ class MicroscopeControls(QtWidgets.QMainWindow):
         self._timelapse_timer.timeout.connect(self._capture_timelapse_image)
 
         # setup camera and start preview
-        self.cam = Camera()
+        self.cam = Camera(
+            hflip=self.config.get("Flip horizontally"),
+            vflip=self.config.get("Flip vertically"),
+        )
 
         self.preview = PreviewWindow(
             self.cam,
             parent=self,
-            hflip=self.config.get("Flip horizontally"),
-            vflip=self.config.get("Flip vertically"),
         )
         self.cam.start()
 
@@ -91,7 +92,7 @@ class MicroscopeControls(QtWidgets.QMainWindow):
             return tmp
 
         def label_element_layout(
-            label: str, element: [list, any]
+                label: str, element: [list, any]
         ) -> QtWidgets.QHBoxLayout:
             """Create a label on left, element(s) on right layout.
 
@@ -283,12 +284,12 @@ class MicroscopeControls(QtWidgets.QMainWindow):
                 self._set_button_state(self.img_record_button, True)
 
                 interval_s = (
-                    self.img_timelapse_time.value()
-                    * ut.TimeUnits[self.img_timelapse_time_unit.currentText()]
+                        self.img_timelapse_time.value()
+                        * ut.TimeUnits[self.img_timelapse_time_unit.currentText()]
                 )
                 duration_s = (
-                    self.img_timelapse_duration.value()
-                    * ut.TimeUnits[self.img_timelapse_duration_unit.currentText()]
+                        self.img_timelapse_duration.value()
+                        * ut.TimeUnits[self.img_timelapse_duration_unit.currentText()]
                 )
 
                 if duration_s == 0:
@@ -352,8 +353,8 @@ class MicroscopeControls(QtWidgets.QMainWindow):
             self.img_record_button.setEnabled(False)
 
             recording_time = (
-                self.mov_rec_time.value()
-                * ut.TimeUnits[self.mov_rec_time_unit.currentText()]
+                    self.mov_rec_time.value()
+                    * ut.TimeUnits[self.mov_rec_time_unit.currentText()]
             )
 
             if recording_time > 0:
@@ -418,7 +419,7 @@ class MicroscopeControls(QtWidgets.QMainWindow):
 
         # if transforms have changed, tell user to restart software
         if new_dict["Flip horizontally"] != self.config.get(
-            "Flip horizontally"
+                "Flip horizontally"
         ) or new_dict["Flip vertically"] != self.config.get("Flip vertically"):
             QtWidgets.QMessageBox.warning(
                 self,
