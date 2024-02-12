@@ -19,6 +19,7 @@ class MicroscopeControls(QtWidgets.QMainWindow):
         # Styling
 
         # GUI widgets
+        self.img_timelapse_duration_unit = None
         self.img_timelapse_duration = None
         self.img_record_button = None
         self.img_timelapse_time_unit = None
@@ -365,12 +366,23 @@ class MicroscopeControls(QtWidgets.QMainWindow):
             print("stop recording movie")
 
     def set_user_path(self):
-        """Set user path to a chosen value."""
-        print("set user path")
+        """Set user path to a chosen value.
+        
+        Bring up a QFileDialog to choose a path, then set it to the user path as a 
+        Path object.
+        """
+        new_path = QtWidgets.QFileDialog.getExistingDirectory(
+            self, "Select directory", str(self._user_path)
+        )
+        if new_path:
+            self._user_path = Path(new_path)
+            self.path_label.setText(str(self._user_path.absolute()))
+        
 
     def settings_dialog(self):
         """Display a settings dialog."""
         print("Settings dialog")
+        print(f"{self._user_path=}")
 
     def timelapse_changed(self, state):
         """Act on change in timelapse settings."""
