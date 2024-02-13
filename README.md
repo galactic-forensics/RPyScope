@@ -5,6 +5,24 @@ using a Raspberry Pi Camera.
 The software interface is written in Python,
 thus the name `RPyScope`.
 
+## Privacy notice
+
+Since this is very much work in progress,
+we are currently using [Sentry](https://sentry.io/)
+to track the behavior of the software.
+This is by default activated in the `__init__.py` file
+in `src/rpyconfig` and there is currently no automatic way of changing it.
+If you do not want to send crashes to us,
+please delete the `import sentry_sdk` line
+and delete the statement `sentry_sdk.init(...)`.
+
+In a future, more stable version,
+this will be made a user opt-in version,
+such that you have to explicitly opt-in to submit data.
+
+Of course, leaving this activated helps us a lot
+in finding errors and issues!
+
 ## Installation
 
 We assume that you have the following components available:
