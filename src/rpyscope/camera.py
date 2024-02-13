@@ -54,32 +54,24 @@ class PiCamHQ:
         # Camera information
         self._name = "Raspberry Pi High Quality Camera"
         # these tuples are the configurations. They must have equal length
-        self._modes = (1, 2, 3, 4, "spec")  # integers
         self._resolutions = (
             (2028, 1080),
-            (2028, 1520),
+            (1332, 990),
             (4056, 3040),
-            (1012, 760),
-            (1440, 1080),
+            (2028, 1520),
+            (1014, 760),
         )  # resolution: width, height
         self._aspect_ratios = ("169:90", "4:3", "4:3", "4:3", "4:3")  # info only
-        self._video_modes = (True, False, False, True,True)  # available in video
+        self._video_modes = (True, True, False, False, False)  # available in video
         self._limits_frame_rates = (
             (0.1, 50),
-            (0.1, 50),
-            (0.005, 10),
-            (50.1, 120),
-            (0.1, 50),
+            (0.1, 120),
+            ("N/A", "N/A"),
+            ("N/A", "N/A"),
+            ("N/A", "N/A"),
         )  # min, max
-        self._image_modes = (False, False, True, True, False)  # available in image mode
-        self._fovs = ("partial", "full", "full", "full", "full")  # info only
-        self._binning_scalings = (
-            "2 x 2 binned",
-            "2 x 2 binned",
-            "None",
-            "4 x 4 scaled",
-            "2 x 2 binned",
-        )  # info only
+        self._image_modes = (False, False, True, True, True)  # available in image mode
+        self._fovs = ("partial", "zoomed", "full", "full","full")  # info only
 
         # set parameters
         self._resolution_video_mode = None
@@ -87,7 +79,7 @@ class PiCamHQ:
         self._frame_rate = None
 
         # set default resolution
-        self.resolution_video_mode = self._resolutions[4]
+        self.resolution_video_mode = self._resolutions[0]
         self.resolution_image_mode = self._resolutions[2]
 
         # set default frame rate
@@ -128,25 +120,21 @@ class PiCamHQ:
             - Second tuple: Tuple of tuples... data
         """
         hdr = (
-            "Mode",
             "Resolution (px)",
             "Aspect Ratio",
             "Video",
             "Frame rate (fps)",
             "Image",
             "Field of View",
-            "Binning & Scaling",
         )
 
         table = (
-            [str(it) for it in self._modes],
             [f"{w}x{h}" for w, h in self._resolutions],
             self._aspect_ratios,
             ["x" if it else "" for it in self._video_modes],
             [f"{it} - {jt}" for it, jt in self._limits_frame_rates],
             ["x" if it else "" for it in self._image_modes],
             self._fovs,
-            self._binning_scalings,
         )
 
         return hdr, table

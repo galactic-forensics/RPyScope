@@ -133,12 +133,12 @@ class MicroscopeControls(QtWidgets.QMainWindow):
         htmp.addWidget(info_button)
         htmp.addStretch()
 
-        preview_button = QtWidgets.QPushButton("Preview")
-        preview_button.setToolTip("Show preview again if it was closed.")
-        # fixme: this is not working
-        preview_button.clicked.connect(lambda: self.preview.show())
-        htmp.addWidget(preview_button)
-        htmp.addStretch()
+        # preview_button = QtWidgets.QPushButton("Preview")
+        # preview_button.setToolTip("Show preview again if it was closed.")
+        # # fixme: this is not working
+        # preview_button.clicked.connect(lambda: self.preview.show())
+        # htmp.addWidget(preview_button)
+        # htmp.addStretch()
 
         settings_button = QtWidgets.QPushButton("Settings")
         settings_button.clicked.connect(self.settings_dialog)
