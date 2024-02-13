@@ -54,6 +54,7 @@ class Transform:
 
 class Quality(Enum):
     """Fake quality class."""
+
     VERY_LOW = 1
     LOW = 2
     MEDIUM = 3
@@ -66,11 +67,13 @@ class H264Encoder:
 
     def __init__(self):
         pass
-    
+
+
 class QGlPicamera2(QtWidgets.QWidget):
     """Fake QGLPicamera2 class."""
-    
+
     done_signal = QtCore.Signal()
     signal_done = QtCore.Signal()
+
     def __init__(self, *args, **kwargs):
         super().__init__()

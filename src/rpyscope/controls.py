@@ -451,9 +451,7 @@ class MicroscopeControls(QtWidgets.QMainWindow):
 
         hflip = new_dict["Flip horizontally"]
         vflip = new_dict["Flip vertically"]
-        self.cam.update_preview_configuration(
-            hflip=hflip, vflip=vflip
-        )
+        self.cam.update_preview_configuration(hflip=hflip, vflip=vflip)
         self.cam.update_capture_configuration(hflip=hflip, vflip=vflip)
         self.cam.update_video_configuration(hflip=hflip, vflip=vflip)
         self.cam.restart_preview()

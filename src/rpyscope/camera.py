@@ -71,7 +71,7 @@ class PiCamHQ:
             ("N/A", "N/A"),
         )  # min, max
         self._image_modes = (False, False, True, True, True)  # available in image mode
-        self._fovs = ("partial", "zoomed", "full", "full","full")  # info only
+        self._fovs = ("partial", "zoomed", "full", "full", "full")  # info only
 
         # set parameters
         self._resolution_video_mode = None
