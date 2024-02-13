@@ -3,11 +3,12 @@
 from pathlib import Path
 
 try:
-    from picamera2 import Picamera2, CameraConfiguration
+    from picamera2 import Picamera2
+    from picamera2.encoders import H264Encoder, Quality
     from libcamera import Transform
 except ImportError:  # local dev, not on RPi
     from rpyscope.dev import SimCamera as Picamera2
-    from rpyscope.dev import Transform
+    from rpyscope.dev import H264Encoder, Quality, Transform
 
 
 class PiCamHQ:
@@ -27,13 +28,17 @@ class PiCamHQ:
         self.cam = Picamera2()
         self.control = control
 
+        self._video_encoder = H264Encoder()
+        self._video_quality = Quality.VERY_HIGH
+        self._video_format = "h264"
+
         # temporary variables:
         self._filename = None
+        self._is_recording = False
 
         # define transformation
         self._hflip = kwargs.get("hflip", False)
         self._vflip = kwargs.get("vflip", False)
-        transform = Transform(hflip=self._hflip, vflip=self._vflip)
 
         # configure standard preview configuration
         self._preview_configuration = self.cam.create_preview_configuration()
@@ -41,46 +46,62 @@ class PiCamHQ:
         self.cam.configure(self._preview_configuration)
 
         self._capture_configuration = self.cam.create_still_configuration()
-        # self._img_configuration["main"]["format"] = "RGB888"
         self._capture_configuration["transform"] = self.transform
+
+        self._video_configuration = self.cam.create_video_configuration()
+        self._video_configuration["transform"] = self.transform
 
         # Camera information
         self._name = "Raspberry Pi High Quality Camera"
         # these tuples are the configurations. They must have equal length
-        self._modes = (1, 2, 3, 4)  # integers
+        self._modes = (1, 2, 3, 4, "spec")  # integers
         self._resolutions = (
             (2028, 1080),
             (2028, 1520),
             (4056, 3040),
             (1012, 760),
+            (1440, 1080),
         )  # resolution: width, height
-        self._aspect_ratios = ("169:90", "4:3", "4:3", "4:3")  # info only
-        self._video_modes = (True, True, True, True)  # available in video
+        self._aspect_ratios = ("169:90", "4:3", "4:3", "4:3", "4:3")  # info only
+        self._video_modes = (True, False, False, True,True)  # available in video
         self._limits_frame_rates = (
             (0.1, 50),
             (0.1, 50),
             (0.005, 10),
             (50.1, 120),
+            (0.1, 50),
         )  # min, max
-        self._image_modes = (False, False, True, True)  # available in image mode
-        self._fovs = ("partial", "full", "full", "full")  # info only
+        self._image_modes = (False, False, True, True, False)  # available in image mode
+        self._fovs = ("partial", "full", "full", "full", "full")  # info only
         self._binning_scalings = (
             "2 x 2 binned",
             "2 x 2 binned",
             "None",
             "4 x 4 scaled",
+            "2 x 2 binned",
         )  # info only
 
         # set parameters
-        self._mode = None
         self._resolution_video_mode = None
         self._limits_frame_rate = None
+        self._frame_rate = None
 
         # set default resolution
-        self.resolution_video_mode = self._resolutions[2]
+        self.resolution_video_mode = self._resolutions[4]
         self.resolution_image_mode = self._resolutions[2]
 
-        self._video_format = "h264"
+        # set default frame rate
+        self.frame_rate = 30
+
+    @property
+    def frame_rate(self) -> float:
+        """Get the current frame rate."""
+        return self._frame_rate
+
+    @frame_rate.setter
+    def frame_rate(self, value):
+        self._frame_rate = value
+        self.update_video_configuration(framerate=value)
 
     @property
     def hflip(self) -> bool:
@@ -139,23 +160,6 @@ class PiCamHQ:
         return self._limits_frame_rate
 
     @property
-    def transform(self) -> Transform:
-        """Get the transformation settings object."""
-        return Transform(hflip=self._hflip, vflip=self._vflip)
-
-    @property
-    def mode(self) -> int:
-        """Get/set the mode the camera is in - sets video mode!"""
-        return self._mode
-
-    @mode.setter
-    def mode(self, value: int):
-        idx = self._modes.index(value)
-        self._mode = value
-        self._resolution_video_mode = self._resolutions[idx]
-        self._limits_frame_rate = self._limits_frame_rates[idx]
-
-    @property
     def name(self):
         """Get the name of the camera."""
         return self._name
@@ -172,9 +176,8 @@ class PiCamHQ:
 
     @resolution_image_mode.setter
     def resolution_image_mode(self, value: tuple):
-        idx = self._resolutions.index(value)
         self._resolution_image_mode = value
-        self._mode = self._modes[idx]
+        self.update_capture_configuration(resolution=value)
 
     @property
     def resolution_str_image_mode(self) -> str:
@@ -206,8 +209,8 @@ class PiCamHQ:
     def resolution_video_mode(self, value: tuple):
         idx = self._resolutions.index(value)
         self._resolution_video_mode = value
-        self._mode = self._modes[idx]
         self._limits_frame_rate = self._limits_frame_rates[idx]
+        self.update_video_configuration(resolution=value)
 
     @property
     def resolution_str_video_mode(self) -> str:
@@ -228,12 +231,17 @@ class PiCamHQ:
     @property
     def resolutions_video_mode(self) -> tuple:
         """Get all resolutions as tuples."""
-        return self._resolutions
+        return [k for it, k in enumerate(self._resolutions) if self._video_modes[it]]
 
     @property
     def resolutions_image_mode(self):
         """Get all resolutions that are possible in image mode."""
         return [k for it, k in enumerate(self._resolutions) if self._image_modes[it]]
+
+    @property
+    def transform(self) -> Transform:
+        """Get the transformation settings object."""
+        return Transform(hflip=self._hflip, vflip=self._vflip)
 
     @property
     def vflip(self) -> bool:
@@ -260,7 +268,7 @@ class PiCamHQ:
             result.save(self._filename)
             self._filename = None
 
-    def my_capture_image(self, filename: Path):
+    def capture_image(self, filename: Path):
         """Capture an image and save it to a file.
 
         The capture configuration that is set up will be used. Saves an image to a
@@ -269,11 +277,36 @@ class PiCamHQ:
         :param filename: Filename to save the image to.
         """
         self._filename = filename
+
         self.cam.switch_mode_and_capture_image(
             self._capture_configuration,
             "main",
             signal_function=self.control.preview.qpicamera2.signal_done,
         )
+
+    def capture_video_start(self, filename: Path):
+        """Capture a video and save it to a file.
+
+        The capture configuration that is set up will be used.
+
+        :param filename: Filename to save the video to.
+        """
+        self.cam.stop()
+        self.cam.configure(self._video_configuration)
+        self.cam.start_recording(
+            self._video_encoder, str(filename.absolute()), quality=self._video_quality
+        )
+
+    def capture_video_stop(self):
+        """Stop the video recording."""
+        self.cam.stop_recording()
+        self.restart_preview()
+
+    def restart_preview(self):
+        """Load configuration for preview, then start the preview."""
+        self.cam.stop()
+        self.cam.configure(self._preview_configuration)
+        self.cam.start()
 
     def update_capture_configuration(self, **kwargs):
         """Update the capture configuration.
@@ -302,3 +335,28 @@ class PiCamHQ:
         self._hflip = kwargs.get("hflip", self._hflip)
         self._vflip = kwargs.get("vflip", self._vflip)
         self._preview_configuration["transform"] = self.transform
+
+    def update_video_configuration(self, **kwargs):
+        """Update the video configuration.
+
+        :param kwargs: Keyword arguments to update the configuration.
+            - hflip: Horizontal flip.
+            - vflip: Vertical flip.
+            - resolution: (width, height) tuple.
+            - framerate: Frame rate in fps.
+        """
+        self._hflip = kwargs.get("hflip", self._hflip)
+        self._vflip = kwargs.get("vflip", self._vflip)
+        self._video_configuration["transform"] = self.transform
+
+        resolution = kwargs.get("resolution", None)
+        if resolution is not None:
+            self._video_configuration["main"]["size"] = resolution
+
+        framerate = kwargs.get("framerate", None)
+        if framerate is not None:
+            frame_rate_limit = 1.0e6 / framerate  # in microseconds
+            self._video_configuration["controls"]["FrameDurationLimits"] = (
+                int(frame_rate_limit),
+                int(frame_rate_limit),
+            )

@@ -5,9 +5,9 @@ from qtpy import QtWidgets
 try:
     from picamera2.previews.qt import QGlPicamera2
     from picamera2 import Picamera2
-    from libcamera import Transform
 except ImportError:  # local development, not on RPi
     from rpyscope.dev import SimCamera as Picamera2
+    from rpyscope.dev import QGlPicamera2
 
 
 class PreviewWindow(QtWidgets.QMainWindow):
@@ -35,8 +35,7 @@ class PreviewWindow(QtWidgets.QMainWindow):
         height = kwargs.get("height", 600)
         width = kwargs.get("width", 800)
 
-        if Picamera2.__name__ != "SimCamera":
-            self.qpicamera2 = QGlPicamera2(picam2)
-            self.setCentralWidget(self.qpicamera2)
+        self.qpicamera2 = QGlPicamera2(picam2)
+        self.setCentralWidget(self.qpicamera2)
 
         self.setGeometry(left, top, width, height)

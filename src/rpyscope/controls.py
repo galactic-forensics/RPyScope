@@ -135,7 +135,8 @@ class MicroscopeControls(QtWidgets.QMainWindow):
 
         preview_button = QtWidgets.QPushButton("Preview")
         preview_button.setToolTip("Show preview again if it was closed.")
-        preview_button.clicked.connect(self.preview.show)
+        # fixme: this is not working
+        preview_button.clicked.connect(lambda: self.preview.show())
         htmp.addWidget(preview_button)
         htmp.addStretch()
 
@@ -187,7 +188,9 @@ class MicroscopeControls(QtWidgets.QMainWindow):
         self.mov_resolution.currentIndexChanged.connect(self.mov_resolution_changed)
         layout.addLayout(label_element_layout("Resolution movie", self.mov_resolution))
 
-        self.mov_framerate = QtWidgets.QDoubleSpinBox(decimals=3)
+        self.mov_framerate = QtWidgets.QDoubleSpinBox(decimals=1)
+        self.mov_framerate.setValue(self.cam.frame_rate)
+        self.mov_framerate.valueChanged.connect(self.mov_framerate_changed)
         layout.addLayout(label_element_layout("Framerate (fps)", self.mov_framerate))
 
         # set default resolution: must be after frame rate is initialized
@@ -225,6 +228,7 @@ class MicroscopeControls(QtWidgets.QMainWindow):
         self.img_resolution.setToolTip(
             "Resolution of the image in pixels (width x height)"
         )
+        self.img_resolution.currentIndexChanged.connect(self.img_resolution_changed)
         layout.addLayout(label_element_layout("Resolution image", self.img_resolution))
 
         timelapse_checkbox = QtWidgets.QCheckBox()
@@ -319,7 +323,7 @@ class MicroscopeControls(QtWidgets.QMainWindow):
             "tiff",
             date_prefix=self._date_prefix,
         )
-        self.cam.my_capture_image(filename)
+        self.cam.capture_image(filename)
 
     def _capture_timelapse_image(self):
         """Capture a timelapse image."""
@@ -331,9 +335,17 @@ class MicroscopeControls(QtWidgets.QMainWindow):
         if self._timelapse_counter == 0:  # stop right after taking last image
             self.capture_image()
 
+    def img_resolution_changed(self):
+        """Change image resolution in the camera."""
+        res_w, res_h = self.img_resolution.currentText().split("x")
+        self.cam.resolution_image_mode = int(res_w), int(res_h)
+
+    def mov_framerate_changed(self):
+        """Set framerate when it was changed."""
+        self.cam.frame_rate = self.mov_framerate.value()
+
     def mov_resolution_changed(self):
         """Set framerate when movie resolution was changed."""
-        print("mov resolution changed")
         res_w, res_h = self.mov_resolution.currentText().split("x")
         self.cam.resolution_video_mode = int(res_w), int(res_h)
         frame_rate_limits = self.cam.limits_frame_rate
@@ -362,7 +374,13 @@ class MicroscopeControls(QtWidgets.QMainWindow):
             if recording_time > 0:
                 self._movie_timer.start(recording_time * 1000)
 
-            print("start recording movie")
+            filename = ut.filename_increment(
+                self.config.get("user_path"),
+                self.file_name_input.text(),
+                self.cam.video_format,
+                date_prefix=self._date_prefix,
+            )
+            self.cam.capture_video_start(filename)
         else:
             self._movie_is_recording = False
 
@@ -373,7 +391,7 @@ class MicroscopeControls(QtWidgets.QMainWindow):
             self.img_record_button.setEnabled(True)
 
             self._movie_timer.stop()
-            print("stop recording movie")
+            self.cam.capture_video_stop()
 
     def set_user_path(self):
         """Set user path to a chosen value.
@@ -431,10 +449,14 @@ class MicroscopeControls(QtWidgets.QMainWindow):
         #         QtWidgets.QMessageBox.Ok,
         #     )
 
+        hflip = new_dict["Flip horizontally"]
+        vflip = new_dict["Flip vertically"]
         self.cam.update_preview_configuration(
-            hflip=new_dict["Flip horizontally"], vflip=new_dict["Flip vertically"]
+            hflip=hflip, vflip=vflip
         )
-        self.cam.switch_to_preview()
+        self.cam.update_capture_configuration(hflip=hflip, vflip=vflip)
+        self.cam.update_video_configuration(hflip=hflip, vflip=vflip)
+        self.cam.restart_preview()
 
         self.config.set_many(new_dict)
         self.config.save()
