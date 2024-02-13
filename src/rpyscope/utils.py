@@ -3,6 +3,7 @@
 from datetime import datetime
 from enum import IntEnum
 from pathlib import Path
+from typing import Union
 
 from qtpy import QtGui, QtWidgets
 
@@ -63,7 +64,9 @@ class SettingsQComboBox(QtWidgets.QComboBox):
         self.setMaximumWidth(100)
 
 
-def filename_increment(pth: Path, fname: str, ext: str, date_prefix=True) -> Path:
+def filename_increment(
+    pth: Union[Path, str], fname: str, ext: str, date_prefix=True
+) -> Path:
     """Create a filename, increment it with three digits, and return the full path.
 
     The returned filename will be a complete path, where the filename is going to be
@@ -74,6 +77,9 @@ def filename_increment(pth: Path, fname: str, ext: str, date_prefix=True) -> Pat
     :param ext: File extension.
     :param date_prefix: If True, add a date prefix to the filename.
     """
+    if isinstance(pth, str):
+        pth = Path(pth)
+
     if date_prefix:
         fname = f"{datetime.now().strftime('%Y-%m-%d')}-{fname}"
     it = 0

@@ -1,44 +1,50 @@
 # My own subclass for PiCam2
 
+from pathlib import Path
+
 try:
-    from picamera2 import Picamera2
+    from picamera2 import Picamera2, CameraConfiguration
     from libcamera import Transform
 except ImportError:  # local dev, not on RPi
     from rpyscope.dev import SimCamera as Picamera2
     from rpyscope.dev import Transform
 
 
-class Camera(Picamera2):
-    """PiCam2 class for camera interaction.
-
-    This is the class that actually interacts with the picamera2 library and runs
-    the preview, etc.
-    """
-
-    def __init__(self, *args, **kwargs):
-        """Initialize the camera."""
-        super().__init__()
-        
-        # define transformation
-        hflip = kwargs.get("hflip", False)
-        vflip = kwargs.get("vflip", False)
-        transform = Transform(hflip=hflip, vflip=vflip)
-
-        # configure standard preview configuration
-        _preview_configuration = self.create_preview_configuration()
-        _preview_configuration["transform"] = transform
-        self.configure(_preview_configuration)
-        
-        self._img_configuration = self.create_still_configuration()
-        self._img_configuration["transform"] = transform
-        
-
-
 class PiCamHQ:
     """This is a property class to give us the available settings for a PiCamHQ."""
 
-    def __init__(self):
-        """Initialize the property class."""
+    def __init__(self, control, **kwargs):
+        """Pi Camera HQ class to run the camera and do all the neat things necessary.
+
+        `self.cam` contains the actual `picamera2` camera object.
+
+        :param control: The microscope control object.
+        :param kwargs: Keyword arguments:
+            - hflip: Horizontal flip, default False
+            - vflip: Vertical flip, default False
+        """
+        # Camera setup
+        self.cam = Picamera2()
+        self.control = control
+
+        # temporary variables:
+        self._filename = None
+
+        # define transformation
+        self._hflip = kwargs.get("hflip", False)
+        self._vflip = kwargs.get("vflip", False)
+        transform = Transform(hflip=self._hflip, vflip=self._vflip)
+
+        # configure standard preview configuration
+        self._preview_configuration = self.cam.create_preview_configuration()
+        self._preview_configuration["transform"] = self.transform
+        self.cam.configure(self._preview_configuration)
+
+        self._capture_configuration = self.cam.create_still_configuration()
+        # self._img_configuration["main"]["format"] = "RGB888"
+        self._capture_configuration["transform"] = self.transform
+
+        # Camera information
         self._name = "Raspberry Pi High Quality Camera"
         # these tuples are the configurations. They must have equal length
         self._modes = (1, 2, 3, 4)  # integers
@@ -75,6 +81,18 @@ class PiCamHQ:
         self.resolution_image_mode = self._resolutions[2]
 
         self._video_format = "h264"
+
+    @property
+    def hflip(self) -> bool:
+        """Get horizontal flip mode.
+
+        :return: True if horizontal flip is enabled.
+        """
+        return self._hflip
+
+    @hflip.setter
+    def hflip(self, value):
+        self._hflip = value
 
     @property
     def info(self) -> tuple[tuple, tuple]:
@@ -119,6 +137,11 @@ class PiCamHQ:
         :return: min, max at given setting.
         """
         return self._limits_frame_rate
+
+    @property
+    def transform(self) -> Transform:
+        """Get the transformation settings object."""
+        return Transform(hflip=self._hflip, vflip=self._vflip)
 
     @property
     def mode(self) -> int:
@@ -213,6 +236,69 @@ class PiCamHQ:
         return [k for it, k in enumerate(self._resolutions) if self._image_modes[it]]
 
     @property
+    def vflip(self) -> bool:
+        """Get vertical flip mode.
+
+        :return: True if vertical flip is enabled.
+        """
+        return self._vflip
+
+    @vflip.setter
+    def vflip(self, value):
+        self._vflip = value
+
+    @property
     def video_format(self) -> str:
         """Get the video format qualifier as a string."""
         return self._video_format
+
+    def capture_done(self, job):
+        """"""
+        result = self.cam.wait(job)
+
+        if self._filename is not None:
+            result.save(self._filename)
+            self._filename = None
+
+    def my_capture_image(self, filename: Path):
+        """Capture an image and save it to a file.
+
+        The capture configuration that is set up will be used. Saves an image to a
+        PIL array and then saves it as a tiff file.
+
+        :param filename: Filename to save the image to.
+        """
+        self._filename = filename
+        self.cam.switch_mode_and_capture_image(
+            self._capture_configuration,
+            "main",
+            signal_function=self.control.preview.qpicamera2.signal_done,
+        )
+
+    def update_capture_configuration(self, **kwargs):
+        """Update the capture configuration.
+
+        :param kwargs: Keyword arguments to update the configuration.
+            - hflip: Horizontal flip.
+            - vflip: Vertical flip.
+            - resolution: (width, height) tuple.
+        """
+        self._hflip = kwargs.get("hflip", self._hflip)
+        self._vflip = kwargs.get("vflip", self._vflip)
+        self._capture_configuration["transform"] = self.transform
+
+        resolution = kwargs.get("resolution", None)
+
+        if resolution is not None:
+            self._capture_configuration["main"]["size"] = resolution
+
+    def update_preview_configuration(self, **kwargs):
+        """Update the preview configuration.
+
+        :param kwargs: Keyword arguments to update the configuration.
+            - hflip: Horizontal flip.
+            - vflip: Vertical flip.
+        """
+        self._hflip = kwargs.get("hflip", self._hflip)
+        self._vflip = kwargs.get("vflip", self._vflip)
+        self._preview_configuration["transform"] = self.transform

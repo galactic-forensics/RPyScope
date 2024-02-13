@@ -10,7 +10,9 @@
 -e file:.
 coverage==7.4.1
 iniconfig==2.0.0
+numpy==1.26.4
 packaging==23.2
+pillow==10.2.0
 pluggy==1.4.0
 pyqt5==5.15.10
 pyqt5-qt5==5.15.2

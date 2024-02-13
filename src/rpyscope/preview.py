@@ -31,13 +31,12 @@ class PreviewWindow(QtWidgets.QMainWindow):
         self.setWindowTitle("Live preview")
 
         top = kwargs.get("top", 0)
-        left = kwargs.get("left", 350)
+        left = kwargs.get("left", 500)
         height = kwargs.get("height", 600)
         width = kwargs.get("width", 800)
 
         if Picamera2.__name__ != "SimCamera":
-            preview_widget = QGlPicamera2(picam2)
-            self.setCentralWidget(preview_widget)
+            self.qpicamera2 = QGlPicamera2(picam2)
+            self.setCentralWidget(self.qpicamera2)
 
-        self.show()
         self.setGeometry(left, top, width, height)

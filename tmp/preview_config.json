@@ -1,0 +1,26 @@
+{
+  "use_case": "preview", 
+  "transform": "<libcamera.Transform 'identity'>",
+  "colour_space": "<libcamera.ColorSpace 'sYCC'>",
+  "buffer_count": 4, 
+  "queue": true,
+  "main": 
+  {
+    "format": "XBGR8888", 
+    "size": "(640, 480)"
+  }, 
+  "lores": "None",
+  "raw": 
+  {
+    "format": "SRGGB12_CSI2P", 
+    "size": "(640, 480)"
+  }, 
+  "controls": 
+  {
+    "NoiseReductionMode": "<NoiseReductionModeEnum.Minimal: 3>",
+    "FrameDurationLimits": "(100, 83333)"
+  }, 
+  "sensor": {}, 
+  "display": "main", 
+  "encode": "main"
+}

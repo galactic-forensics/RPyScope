@@ -5,7 +5,7 @@ from pathlib import Path
 from qtpy import QtCore, QtGui, QtWidgets
 import pyqtconfig
 
-from rpyscope.camera import Camera, PiCamHQ
+from rpyscope.camera import PiCamHQ
 from rpyscope.preview import PreviewWindow
 import rpyscope.utils as ut
 
@@ -59,24 +59,24 @@ class MicroscopeControls(QtWidgets.QMainWindow):
         self._timelapse_timer.timeout.connect(self._capture_timelapse_image)
 
         # setup camera and start preview
-        self.cam = Camera(
+        self.cam = PiCamHQ(
+            control=self,
             hflip=self.config.get("Flip horizontally"),
             vflip=self.config.get("Flip vertically"),
         )
 
         self.preview = PreviewWindow(
-            self.cam,
+            self.cam.cam,
             parent=self,
         )
-        self.cam.start()
-
-        # private variables to be stored in controller
-        self._camera_model = PiCamHQ()
+        self.preview.qpicamera2.done_signal.connect(self.cam.capture_done)
+        self.cam.cam.start()
 
         self.init_ui()
 
+        self.preview.show()
+        self.setGeometry(left, top, width, height)
         self.show()
-        self.setGeometry(QtCore.QRect(left, top, width, height))
 
     def init_ui(self):
         """Initialize the user interface."""
@@ -92,7 +92,7 @@ class MicroscopeControls(QtWidgets.QMainWindow):
             return tmp
 
         def label_element_layout(
-                label: str, element: [list, any]
+            label: str, element: [list, any]
         ) -> QtWidgets.QHBoxLayout:
             """Create a label on left, element(s) on right layout.
 
@@ -129,9 +129,7 @@ class MicroscopeControls(QtWidgets.QMainWindow):
 
         info_button = QtWidgets.QPushButton("Info")
         info_button.setToolTip("Display info about the camera.")
-        info_button.clicked.connect(
-            lambda: ut.CameraInfo(self._camera_model, self).exec
-        )
+        info_button.clicked.connect(lambda: ut.CameraInfo(self.cam, self).exec)
         htmp.addWidget(info_button)
         htmp.addStretch()
 
@@ -181,7 +179,7 @@ class MicroscopeControls(QtWidgets.QMainWindow):
 
         self.mov_resolution = QtWidgets.QComboBox(minimumWidth=120)
         self.mov_resolution.insertItems(
-            0, [f"{w}x{h}" for w, h in self._camera_model.resolutions_video_mode]
+            0, [f"{w}x{h}" for w, h in self.cam.resolutions_video_mode]
         )
         self.mov_resolution.setToolTip(
             "Resolution of the movie in pixels (width x height)"
@@ -193,7 +191,7 @@ class MicroscopeControls(QtWidgets.QMainWindow):
         layout.addLayout(label_element_layout("Framerate (fps)", self.mov_framerate))
 
         # set default resolution: must be after frame rate is initialized
-        self.mov_resolution.setCurrentText(self._camera_model.resolution_str_video_mode)
+        self.mov_resolution.setCurrentText(self.cam.resolution_str_video_mode)
 
         self.mov_rec_time = QtWidgets.QSpinBox(minimum=0, maximum=9999)
         self.mov_rec_time.setToolTip(
@@ -221,9 +219,9 @@ class MicroscopeControls(QtWidgets.QMainWindow):
 
         self.img_resolution = QtWidgets.QComboBox(minimumWidth=120)
         self.img_resolution.insertItems(
-            0, [f"{w}x{h}" for w, h in self._camera_model.resolutions_image_mode]
+            0, [f"{w}x{h}" for w, h in self.cam.resolutions_image_mode]
         )
-        self.img_resolution.setCurrentText(self._camera_model.resolution_str_image_mode)
+        self.img_resolution.setCurrentText(self.cam.resolution_str_image_mode)
         self.img_resolution.setToolTip(
             "Resolution of the image in pixels (width x height)"
         )
@@ -284,12 +282,12 @@ class MicroscopeControls(QtWidgets.QMainWindow):
                 self._set_button_state(self.img_record_button, True)
 
                 interval_s = (
-                        self.img_timelapse_time.value()
-                        * ut.TimeUnits[self.img_timelapse_time_unit.currentText()]
+                    self.img_timelapse_time.value()
+                    * ut.TimeUnits[self.img_timelapse_time_unit.currentText()]
                 )
                 duration_s = (
-                        self.img_timelapse_duration.value()
-                        * ut.TimeUnits[self.img_timelapse_duration_unit.currentText()]
+                    self.img_timelapse_duration.value()
+                    * ut.TimeUnits[self.img_timelapse_duration_unit.currentText()]
                 )
 
                 if duration_s == 0:
@@ -315,9 +313,13 @@ class MicroscopeControls(QtWidgets.QMainWindow):
 
     def _capture_single_image(self):
         """Capture a single image."""
-        print("capture single image")
-
-        # todo: get filename, capture image to filename
+        filename = ut.filename_increment(
+            self.config.get("user_path"),
+            self.file_name_input.text(),
+            "tiff",
+            date_prefix=self._date_prefix,
+        )
+        self.cam.my_capture_image(filename)
 
     def _capture_timelapse_image(self):
         """Capture a timelapse image."""
@@ -333,8 +335,8 @@ class MicroscopeControls(QtWidgets.QMainWindow):
         """Set framerate when movie resolution was changed."""
         print("mov resolution changed")
         res_w, res_h = self.mov_resolution.currentText().split("x")
-        self._camera_model.resolution_video_mode = int(res_w), int(res_h)
-        frame_rate_limits = self._camera_model.limits_frame_rate
+        self.cam.resolution_video_mode = int(res_w), int(res_h)
+        frame_rate_limits = self.cam.limits_frame_rate
         self.mov_framerate.setMinimum(frame_rate_limits[0])
         self.mov_framerate.setMaximum(frame_rate_limits[1])
         self.mov_framerate.setToolTip(
@@ -353,8 +355,8 @@ class MicroscopeControls(QtWidgets.QMainWindow):
             self.img_record_button.setEnabled(False)
 
             recording_time = (
-                    self.mov_rec_time.value()
-                    * ut.TimeUnits[self.mov_rec_time_unit.currentText()]
+                self.mov_rec_time.value()
+                * ut.TimeUnits[self.mov_rec_time_unit.currentText()]
             )
 
             if recording_time > 0:
@@ -418,16 +420,21 @@ class MicroscopeControls(QtWidgets.QMainWindow):
         new_dict = new_settings.as_dict()
 
         # if transforms have changed, tell user to restart software
-        if new_dict["Flip horizontally"] != self.config.get(
-                "Flip horizontally"
-        ) or new_dict["Flip vertically"] != self.config.get("Flip vertically"):
-            QtWidgets.QMessageBox.warning(
-                self,
-                "Restart required",
-                "You have changed the flip settings. "
-                "Please restart the software for the changes to take effect.",
-                QtWidgets.QMessageBox.Ok,
-            )
+        # if new_dict["Flip horizontally"] != self.config.get(
+        #         "Flip horizontally"
+        # ) or new_dict["Flip vertically"] != self.config.get("Flip vertically"):
+        #     QtWidgets.QMessageBox.warning(
+        #         self,
+        #         "Restart required",
+        #         "You have changed the flip settings. "
+        #         "Please restart the software for the changes to take effect.",
+        #         QtWidgets.QMessageBox.Ok,
+        #     )
+
+        self.cam.update_preview_configuration(
+            hflip=new_dict["Flip horizontally"], vflip=new_dict["Flip vertically"]
+        )
+        self.cam.switch_to_preview()
 
         self.config.set_many(new_dict)
         self.config.save()
