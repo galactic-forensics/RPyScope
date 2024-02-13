@@ -84,10 +84,23 @@ This will install the source in editable mode,
 which is important for updating!
 
 
-
 ### Running the RPyScope Software
 
-TBD
+With the virtual environment activated,
+type `rpyscope` to start the program.
+
+Alternatively, we provide a simple bash script
+that you can place on the Desktop.
+It is called `RPyScope.sh`.
+Move this file to the Desktop
+and make it executable.
+Then simply double click and off you go.
+
+Note: This only works
+if you have cloned the `RPyScope` into your `$HOME` folder
+and named the virtual environment `venv`.
+Open the shell script in a text editor
+to change those settings to your installation!
 
 ### Updates
 
